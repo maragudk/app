@@ -1,1 +1,11 @@
+/.env
+/.env*.local
+/app.db*
+/app.log
 /cover.out
+/go.work*
+/playwright/
+/public/styles/app.css
+/tailwindcss
+/tmp/
+test-*.db*
