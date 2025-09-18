@@ -27,7 +27,7 @@ RUN go mod download
 COPY . ./
 
 ARG TARGETARCH
-RUN GOOS=linux GOARCH=${TARGETARCH} CGO_ENABLED=1 go build -o /bin/app ./cmd/app
+RUN GOOS=linux GOARCH=${TARGETARCH} CGO_ENABLED=1 go build -tags sqlite_fts5,sqlite_math_functions -o /bin/app ./cmd/app
 
 
 

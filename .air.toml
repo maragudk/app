@@ -1,6 +1,6 @@
 [build]
 bin = "tmp/app"
-cmd = "go build -o ./tmp/app ./cmd/app"
+cmd = "go build -tags sqlite_fts5,sqlite_math_functions -o ./tmp/app ./cmd/app"
 stop_on_error = true
 
 [log]

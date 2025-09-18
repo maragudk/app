@@ -2,7 +2,7 @@ APP_NAME := app
 
 .PHONY: benchmark
 benchmark:
-	go test -bench . ./...
+	go test -tags sqlite_fts5,sqlite_math_functions -bench . ./...
 
 .PHONY: build-css
 build-css: tailwindcss
@@ -38,7 +38,7 @@ tailwindcss:
 
 .PHONY: test
 test: test-up
-	go test -coverprofile cover.out -shuffle on ./...
+	go test -tags sqlite_fts5,sqlite_math_functions -coverprofile cover.out -shuffle on ./...
 
 .PHONY: test-down
 test-down:
