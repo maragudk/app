@@ -39,7 +39,7 @@ func Page(props PageProps, body ...Node) Node {
 			Script(Src(appJSPath), Defer()),
 			Script(Src("https://cdn.usefathom.com/script.js"), Data("site", "123"), Defer()),
 			Meta(Name("htmx-config"), Content(`{"scrollIntoViewOnBoost":false}`)),
-			html.FavIcons("c6"),
+			html.FavIcons("app"),
 		},
 		Body: []Node{Class("bg-primary-600 text-gray-900 dark:text-white"),
 			hx.Ext("morph"),
