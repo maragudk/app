@@ -1,5 +1,6 @@
 /.env
 /.env*.local
+/.worktrees/
 /app.db*
 /app.log
 /cover.out

@@ -5,8 +5,8 @@ services:
       MINIO_ROOT_USER: access
       MINIO_ROOT_PASSWORD: secretsecret
     ports:
-      - "9000:9000"
-      - "9001:9001"
+      - "${MINIO_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
     volumes:
       - minio:/data
     command: server /data --console-address ":9001"
@@ -17,7 +17,7 @@ services:
       MINIO_ROOT_USER: access
       MINIO_ROOT_PASSWORD: secretsecret
     ports:
-      - "9002:9000"
+      - "${MINIO_TEST_PORT:-9002}:9000"
 
 volumes:
   minio:

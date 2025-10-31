@@ -2,8 +2,9 @@
 
 set -euo pipefail
 
-kill $(lsof -ti:8080) 2>/dev/null || true
-kill $(lsof -ti:8081) 2>/dev/null || true
+SERVER_PORT=$(grep "^SERVER_ADDRESS=" .env | cut -d: -f2)
+
+kill $(lsof -ti:${SERVER_PORT}) 2>/dev/null || true
 
 echo "" >app.log
 
