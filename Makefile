@@ -20,6 +20,12 @@ clean-all: down
 cover:
 	go tool cover -html cover.out
 
+.PHONY: deps
+deps:
+	curl -Lf -o public/scripts/datastar.js https://cdn.jsdelivr.net/gh/starfederation/datastar@1.0.0-RC.6/bundles/datastar.js
+	curl -Lf -o public/scripts/htmx.js https://unpkg.com/htmx.org@latest/dist/htmx.min.js
+	curl -Lf -o public/scripts/idiomorph-ext.js https://unpkg.com/idiomorph@latest/dist/idiomorph-ext.min.js
+
 .PHONY: down
 down:
 	@docker compose down minio
