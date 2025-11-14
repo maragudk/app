@@ -98,7 +98,7 @@ func start(ctx context.Context, log *slog.Logger, eg app.Goer) error {
 	server := gluehttp.NewServer(gluehttp.NewServerOptions{
 		Address:            env.GetStringOrDefault("SERVER_ADDRESS", ":8080"),
 		BaseURL:            baseURL,
-		CSP:                http.CSP(env.GetBoolOrDefault("CSP_ALLOW_UNSAFE_INLINE", false)),
+		CSP:                http.CSP(env.GetBoolOrDefault("CSP_ALLOW_UNSAFE_INLINE", false), env.GetBoolOrDefault("CSP_ALLOW_UNSAFE_EVAL", false)),
 		HTMLPage:           html.Page,
 		HTTPRouterInjector: http.InjectHTTPRouter(log, db, bucket),
 		Log:                log.With("component", "http.Server"),

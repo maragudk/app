@@ -10,21 +10,26 @@ import (
 
 	"maragu.dev/glue/html"
 	. "maragu.dev/gomponents"
+	ds "maragu.dev/gomponents-datastar"
 	hx "maragu.dev/gomponents-htmx"
 	. "maragu.dev/gomponents/components"
 	. "maragu.dev/gomponents/html"
 )
 
 var hashOnce sync.Once
-var appCSSPath, htmxJSPath, idiomorphJSPath, idiomorphExtJSPath, appJSPath string
+var appCSSPath, appJSPath string
+var htmxJSPath, idiomorphExtJSPath string
+var datastarJSPath string
 
 func Page(props PageProps, body ...Node) Node {
 	hashOnce.Do(func() {
 		appCSSPath = getHashedPath("public/styles/app.css")
-		htmxJSPath = getHashedPath("public/scripts/htmx.js")
-		idiomorphJSPath = getHashedPath("public/scripts/idiomorph.js")
-		idiomorphExtJSPath = getHashedPath("public/scripts/idiomorph-ext.js")
 		appJSPath = getHashedPath("public/scripts/app.js")
+
+		htmxJSPath = getHashedPath("public/scripts/htmx.js")
+		idiomorphExtJSPath = getHashedPath("public/scripts/idiomorph-ext.js")
+
+		datastarJSPath = getHashedPath("public/scripts/datastar.js")
 	})
 
 	return HTML5(HTML5Props{
@@ -34,8 +39,8 @@ func Page(props PageProps, body ...Node) Node {
 		Head: []Node{
 			Link(Rel("stylesheet"), Href(appCSSPath)),
 			Script(Src(htmxJSPath), Defer()),
-			Script(Src(idiomorphJSPath), Defer()),
 			Script(Src(idiomorphExtJSPath), Defer()),
+			Script(Type("module"), Src(datastarJSPath), Defer()),
 			Script(Src(appJSPath), Defer()),
 			Script(Src("https://cdn.usefathom.com/script.js"), Data("site", "123"), Defer()),
 			Meta(Name("htmx-config"), Content(`{"scrollIntoViewOnBoost":false}`)),
@@ -68,7 +73,8 @@ func footer() Node {
 	return Div(
 		container(false,
 			Div(Class("flex items-center justify-center space-x-4 sm:space-x-8 py-2"),
-				a(Href("https://www.maragu.dev"), Text("by maragu")),
+				ds.Init("$counter = 0"), ds.OnInterval("$counter++"),
+				a(Href("https://www.maragu.dev"), Text("by maragu "), Span(ds.Text("$counter"))),
 			),
 		),
 	)

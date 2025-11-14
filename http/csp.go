@@ -4,7 +4,7 @@ import (
 	"maragu.dev/httph"
 )
 
-func CSP(allowUnsafeInline bool) func(*httph.ContentSecurityPolicyOptions) {
+func CSP(allowUnsafeInline, allowUnsafeEval bool) func(*httph.ContentSecurityPolicyOptions) {
 	return func(opts *httph.ContentSecurityPolicyOptions) {
 		opts.ConnectSrc = "'self' https://cdn.usefathom.com"
 
@@ -13,6 +13,9 @@ func CSP(allowUnsafeInline bool) func(*httph.ContentSecurityPolicyOptions) {
 		scriptSrc := "'self' https://cdn.usefathom.com"
 		if allowUnsafeInline {
 			scriptSrc += " 'unsafe-inline'"
+		}
+		if allowUnsafeEval {
+			scriptSrc += " 'unsafe-eval'"
 		}
 		opts.ScriptSrc = scriptSrc
 
