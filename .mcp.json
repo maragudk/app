@@ -1,13 +1,3 @@
 {
-  "mcpServers": {
-    "playwright": {
-      "command": "npx",
-      "args": [
-        "@playwright/mcp@latest",
-        "--vision",
-        "--isolated",
-        "--storage-state=./playwright/storage.json"
-      ]
-    }
-  }
+  "mcpServers": {}
 }
