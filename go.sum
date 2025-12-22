@@ -366,8 +366,8 @@ maragu.dev/glue v0.0.0-20250915133208-6f0c3dadee25 h1:r+nPDd67o841wsNs6Ml0Cc2pOA
 maragu.dev/glue v0.0.0-20250915133208-6f0c3dadee25/go.mod h1:wdGrnd3aGbcTWz6Vc1dpiJjkSGY/Y+NGfP6nHOQdV18=
 maragu.dev/gomponents v1.2.0 h1:H7/N5htz1GCnhu0HB1GasluWeU2rJZOYztVEyN61iTc=
 maragu.dev/gomponents v1.2.0/go.mod h1:oEDahza2gZoXDoDHhw8jBNgH+3UR5ni7Ur648HORydM=
-maragu.dev/gomponents-datastar v0.3.2 h1:c5eUIzcVqt5MFLbX3DsrxlbzDK0Tut+ROm/HH6hLl6I=
-maragu.dev/gomponents-datastar v0.3.2/go.mod h1:cx6Bx+DRz9nAEfrSW1yLZAI1mcM/uvXmJCbe3a66J/I=
+maragu.dev/gomponents-datastar v0.3.3 h1:vGPoEy61xbdBgndfOsde0ILHhw8hL1nwgzNNYScxRFU=
+maragu.dev/gomponents-datastar v0.3.3/go.mod h1:cx6Bx+DRz9nAEfrSW1yLZAI1mcM/uvXmJCbe3a66J/I=
 maragu.dev/gomponents-htmx v0.6.1 h1:vXXOkvqEDKYxSwD1UwqmVp12YwFSuM6u8lsRn7Evyng=
 maragu.dev/gomponents-htmx v0.6.1/go.mod h1:51nXX+dTGff3usM7AJvbeOcQjzjpSycod+60CYeEP/M=
 maragu.dev/goqite v0.3.2-0.20250625131501-cacb23e73698 h1:YOYmPULitPx/pJwVM149HRq+J842ZLYrigw2ayWHzH4=
