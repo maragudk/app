@@ -5,7 +5,7 @@ go 1.25
 tool github.com/air-verse/air
 
 require (
-	github.com/mattn/go-sqlite3 v1.14.32
+	github.com/mattn/go-sqlite3 v1.14.33
 	go.opentelemetry.io/otel v1.38.0
 	go.opentelemetry.io/otel/trace v1.38.0
 	maragu.dev/env v0.2.0
