@@ -18,7 +18,9 @@ jobs:
     runs-on: ubuntu-24.04-arm
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
 
       - name: Setup Docker buildx
         uses: docker/setup-buildx-action@v3
@@ -36,7 +38,9 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
 
       - name: Setup Go
         uses: actions/setup-go@v6
@@ -57,7 +61,9 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
 
       - name: Setup Go
         uses: actions/setup-go@v6
