@@ -10,7 +10,7 @@ import (
 
 	"maragu.dev/glue/html"
 	. "maragu.dev/gomponents"
-	ds "maragu.dev/gomponents-datastar"
+	data "maragu.dev/gomponents-datastar"
 	hx "maragu.dev/gomponents-htmx"
 	. "maragu.dev/gomponents/components"
 	. "maragu.dev/gomponents/html"
@@ -73,8 +73,8 @@ func footer() Node {
 	return Div(
 		container(false,
 			Div(Class("flex items-center justify-center space-x-4 sm:space-x-8 py-2"),
-				ds.Init("$counter = 0"), ds.OnInterval("$counter++"),
-				a(Href("https://www.maragu.dev"), Text("by maragu "), Span(ds.Text("$counter"))),
+				data.Init("$counter = 0"), data.OnInterval("$counter++"),
+				a(Href("https://www.maragu.dev"), Text("by maragu "), Span(data.Text("$counter"))),
 			),
 		),
 	)
