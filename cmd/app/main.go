@@ -77,7 +77,7 @@ func start(ctx context.Context, log *slog.Logger, eg app.Goer) error {
 		Emails:                    email.GetTemplates(),
 		Key:                       env.GetStringOrDefault("POSTMARK_KEY", ""),
 		Log:                       log.With("component", "email.Sender"),
-		MarketingEmailAddress:     model.EmailAddress(env.GetStringOrDefault("REPLY_TO_EMAIL_ADDRESS", "marketing@example.com")),
+		MarketingEmailAddress:     model.EmailAddress(env.GetStringOrDefault("MARKETING_EMAIL_ADDRESS", "marketing@example.com")),
 		MarketingEmailName:        env.GetStringOrDefault("MARKETING_EMAIL_NAME", "Marketing"),
 		ReplyToEmailAddress:       model.EmailAddress(env.GetStringOrDefault("REPLY_TO_EMAIL_ADDRESS", "support@example.com")),
 		ReplyToEmailName:          env.GetStringOrDefault("REPLY_TO_EMAIL_NAME", "Support"),
