@@ -6,8 +6,11 @@ services:
       ROOT_SECRET_KEY: secretsecret
       VGW_BACKEND: posix
       VGW_BACKEND_ARG: /var/lib
+      VGW_WEBUI_PORT: ":7071"
+      VGW_WEBUI_NO_TLS: true
     ports:
       - "${VERSITYGW_PORT:-7070}:7070"
+      - "${VERSITYGW_WEBUI_PORT:-7071}:7071"
     volumes:
       - versitygw:/var/lib
 
