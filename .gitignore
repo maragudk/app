@@ -1,4 +1,6 @@
 /.env
+/.env.docker
+/.env.test
 /.env*.local
 /.worktrees/
 /app.db*
