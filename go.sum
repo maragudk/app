@@ -366,6 +366,8 @@ maragu.dev/glue v0.0.0-20260223141445-907cd6c73981 h1:+n9C/5E19TY3gSgOkKTEYhfSaG
 maragu.dev/glue v0.0.0-20260223141445-907cd6c73981/go.mod h1:AB3+Brin+Y/FunKbGWNqXq+ajCy+dfqpr2zsd8sFL78=
 maragu.dev/glue v0.0.0-20260304143526-19c1eea7dee1 h1:sFOF13+N/nNr8+Mshgg6D5QVQ5TqfppRKUJwG/VgSEQ=
 maragu.dev/glue v0.0.0-20260304143526-19c1eea7dee1/go.mod h1:AB3+Brin+Y/FunKbGWNqXq+ajCy+dfqpr2zsd8sFL78=
+maragu.dev/glue v0.0.0-20260305104648-eec5321380de h1:ALZkWWZ6MzTJioRxxsiFXNDNraDd+h0Ci5/k/hm28aY=
+maragu.dev/glue v0.0.0-20260305104648-eec5321380de/go.mod h1:AB3+Brin+Y/FunKbGWNqXq+ajCy+dfqpr2zsd8sFL78=
 maragu.dev/gomponents v1.2.0 h1:H7/N5htz1GCnhu0HB1GasluWeU2rJZOYztVEyN61iTc=
 maragu.dev/gomponents v1.2.0/go.mod h1:oEDahza2gZoXDoDHhw8jBNgH+3UR5ni7Ur648HORydM=
 maragu.dev/gomponents-datastar v0.3.3 h1:vGPoEy61xbdBgndfOsde0ILHhw8hL1nwgzNNYScxRFU=

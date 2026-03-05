@@ -10,7 +10,7 @@ require (
 	go.opentelemetry.io/otel/trace v1.40.0
 	maragu.dev/env v0.2.0
 	maragu.dev/errors v0.3.0
-	maragu.dev/glue v0.0.0-20260304143526-19c1eea7dee1
+	maragu.dev/glue v0.0.0-20260305104648-eec5321380de
 	maragu.dev/gomponents v1.2.0
 	maragu.dev/gomponents-datastar v0.3.3
 	maragu.dev/gomponents-htmx v0.6.1
