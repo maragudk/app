@@ -91,11 +91,11 @@ func start(ctx context.Context, log *slog.Logger, eg app.Goer) error {
 		Sender: sender,
 	})
 
-	svc := &service.Fat{
+	svc := service.NewFat(service.NewFatOptions{
 		Bucket: bucket,
-		DB:     db,
+		Database: db,
 		Sender: sender,
-	}
+	})
 
 	store, err := sqlitestore.New(ctx, db.H.DB.DB)
 	if err != nil {
@@ -107,7 +107,7 @@ func start(ctx context.Context, log *slog.Logger, eg app.Goer) error {
 		BaseURL:            baseURL,
 		CSP:                http.CSP(env.GetBoolOrDefault("CSP_ALLOW_UNSAFE_INLINE", false), env.GetBoolOrDefault("CSP_ALLOW_UNSAFE_EVAL", false)),
 		HTMLPage:           html.Page,
-		HTTPRouterInjector: http.InjectHTTPRouter(log, db, bucket, svc),
+		HTTPRouterInjector: http.InjectHTTPRouter(log, svc),
 		Log:                log.With("component", "http.Server"),
 		PermissionsGetter:  db,
 		SecureCookie:       env.GetBoolOrDefault("SECURE_COOKIE", true),

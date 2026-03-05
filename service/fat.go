@@ -18,14 +18,14 @@ type Fat struct {
 
 type NewFatOptions struct {
 	Bucket *s3.Bucket
-	DB     *sqlite.Database
+	Database *sqlite.Database
 	Sender *postmark.Sender
 }
 
 func NewFat(opts NewFatOptions) *Fat {
 	return &Fat{
 		bucket: opts.Bucket,
-		db:     opts.DB,
+		db:     opts.Database,
 		sender: opts.Sender,
 	}
 }
