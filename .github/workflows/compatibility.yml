@@ -22,6 +22,17 @@ jobs:
           - locked
           - latest
 
+    services:
+      versitygw:
+        image: versity/versitygw:latest
+        ports:
+          - "7072:7070"
+        env:
+          ROOT_ACCESS_KEY: "access"
+          ROOT_SECRET_KEY: "secretsecret"
+          VGW_BACKEND: "posix"
+          VGW_BACKEND_ARG: "/var/lib"
+
     steps:
       - uses: actions/checkout@v6
         with:

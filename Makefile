@@ -14,7 +14,7 @@ build-docker:
 
 .PHONY: clean-all
 clean-all: down
-	docker volume rm $(APP_NAME)_minio
+	docker volume rm $(APP_NAME)_versitygw
 
 .PHONY: cover
 cover:
@@ -28,7 +28,7 @@ deps:
 
 .PHONY: down
 down:
-	@docker compose down minio
+	@docker compose down versitygw
 
 .PHONY: fmt
 fmt:
@@ -48,15 +48,15 @@ test: test-up
 
 .PHONY: test-down
 test-down:
-	docker compose down minio-test
+	docker compose down versitygw-test
 
 .PHONY: test-up
 test-up:
-	docker compose up -d minio-test
+	docker compose up -d versitygw-test
 
 .PHONY: up
 up:
-	@docker compose up -d minio
+	@docker compose up -d versitygw
 
 .PHONY: watch
 watch: up
