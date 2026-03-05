@@ -4,6 +4,8 @@ package servicetest
 import (
 	"testing"
 
+	"maragu.dev/glue/s3test"
+
 	"app/service"
 	"app/sqlitetest"
 )
@@ -13,6 +15,7 @@ func NewFat(t *testing.T, opts ...sqlitetest.NewDatabaseOption) *service.Fat {
 	t.Helper()
 
 	return &service.Fat{
-		DB: sqlitetest.NewDatabase(t, opts...),
+		Bucket: s3test.NewBucket(t),
+		DB:     sqlitetest.NewDatabase(t, opts...),
 	}
 }

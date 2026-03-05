@@ -92,6 +92,7 @@ func start(ctx context.Context, log *slog.Logger, eg app.Goer) error {
 	})
 
 	svc := &service.Fat{
+		Bucket: bucket,
 		DB:     db,
 		Sender: sender,
 	}
