@@ -1,3 +1,5 @@
+// Package service provides business logic.
+// See https://www.alexedwards.net/blog/the-fat-service-pattern
 package service
 
 import (
