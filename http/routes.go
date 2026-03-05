@@ -4,17 +4,13 @@ import (
 	"log/slog"
 
 	"maragu.dev/glue/http"
-	"maragu.dev/glue/s3"
 
-	"app/sqlite"
+	"app/service"
 )
 
-func InjectHTTPRouter(log *slog.Logger, db *sqlite.Database, bucket *s3.Bucket) func(*Router) {
+func InjectHTTPRouter(log *slog.Logger, svc *service.Fat) func(*Router) {
 	return func(r *Router) {
-		r.Use(AddUserToContext(log, db))
-
-		// Signup(r, log, db)
-		// Login(r, log, db, r.SM)
+		r.Use(AddUserToContext(log, svc))
 
 		r.Group(func(r *http.Router) {
 			Home(r, log)

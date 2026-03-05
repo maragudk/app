@@ -21,6 +21,7 @@ import (
 	"app/http"
 	"app/jobs"
 	"app/model"
+	"app/service"
 	"app/sqlite"
 )
 
@@ -90,6 +91,12 @@ func start(ctx context.Context, log *slog.Logger, eg app.Goer) error {
 		Sender: sender,
 	})
 
+	svc := service.NewFat(service.NewFatOptions{
+		Bucket: bucket,
+		Database: db,
+		Sender: sender,
+	})
+
 	store, err := sqlitestore.New(ctx, db.H.DB.DB)
 	if err != nil {
 		return errors.Wrap(err, "error creating sqlite session store")
@@ -100,7 +107,7 @@ func start(ctx context.Context, log *slog.Logger, eg app.Goer) error {
 		BaseURL:            baseURL,
 		CSP:                http.CSP(env.GetBoolOrDefault("CSP_ALLOW_UNSAFE_INLINE", false), env.GetBoolOrDefault("CSP_ALLOW_UNSAFE_EVAL", false)),
 		HTMLPage:           html.Page,
-		HTTPRouterInjector: http.InjectHTTPRouter(log, db, bucket),
+		HTTPRouterInjector: http.InjectHTTPRouter(log, svc),
 		Log:                log.With("component", "http.Server"),
 		PermissionsGetter:  db,
 		SecureCookie:       env.GetBoolOrDefault("SECURE_COOKIE", true),
