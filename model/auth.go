@@ -33,8 +33,3 @@ const (
 )
 
 type Permission = model.Permission
-
-type SignupInput struct {
-	Name  string
-	Email EmailAddress
-}

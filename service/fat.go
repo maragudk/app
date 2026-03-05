@@ -35,8 +35,3 @@ func NewFat(opts NewFatOptions) *Fat {
 func (f *Fat) GetUser(ctx context.Context, id model.UserID) (model.User, error) {
 	return f.db.GetUser(ctx, id)
 }
-
-func (f *Fat) Signup(ctx context.Context, input model.SignupInput) error {
-	// placeholder: business logic goes here
-	return nil
-}
