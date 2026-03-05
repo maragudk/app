@@ -6,14 +6,12 @@ import (
 	"maragu.dev/is"
 
 	"app/model"
-	"app/service"
-	"app/sqlitetest"
+	"app/servicetest"
 )
 
 func TestFat_Signup(t *testing.T) {
 	t.Run("signs up a new user", func(t *testing.T) {
-		db := sqlitetest.NewDatabase(t)
-		f := &service.Fat{DB: db}
+		f := servicetest.NewFat(t)
 
 		err := f.Signup(t.Context(), model.SignupInput{
 			Name:  "Test User",
