@@ -58,10 +58,7 @@ test-up:
 up:
 	@docker compose up -d versitygw
 
-.PHONY: watch
-watch: up
-	./watch.sh
-
 .PHONY: watch-css
 watch-css: tailwindcss
 	./tailwindcss -i tailwind.css -o public/styles/app.css --watch
+
