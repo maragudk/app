@@ -10,5 +10,4 @@
 /playwright/
 /public/styles/app.css
 /tailwindcss
-/tmp/
 test-*.db*

@@ -1,4 +1,7 @@
-APP_NAME := app
+-include .env
+
+APP_NAME ?= app
+DATABASE_PATH ?= app.db
 
 .PHONY: benchmark
 benchmark:
@@ -6,7 +9,7 @@ benchmark:
 
 .PHONY: build-css
 build-css: tailwindcss
-		./tailwindcss -i tailwind.css -o public/styles/app.css --minify
+	./tailwindcss -i tailwind.css -o public/styles/app.css --minify
 
 .PHONY: build-docker
 build-docker:
@@ -15,6 +18,7 @@ build-docker:
 .PHONY: clean-all
 clean-all: down
 	docker volume rm $(APP_NAME)_versitygw
+	rm -f $(DATABASE_PATH) $(DATABASE_PATH)-wal $(DATABASE_PATH)-shm
 
 .PHONY: cover
 cover:
@@ -56,12 +60,9 @@ test-up:
 
 .PHONY: up
 up:
-	@docker compose up -d versitygw
-
-.PHONY: watch
-watch: up
-	./watch.sh
+	docker compose up -d versitygw
 
 .PHONY: watch-css
 watch-css: tailwindcss
 	./tailwindcss -i tailwind.css -o public/styles/app.css --watch
+
