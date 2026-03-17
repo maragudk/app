@@ -4,10 +4,9 @@
 /.env*.local
 /.worktrees/
 /app.db*
-/app.log
+/*.log
 /cover.out
 /go.work*
-/playwright/
 /public/styles/app.css
 /tailwindcss
 test-*.db*

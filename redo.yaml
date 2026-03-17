@@ -1,0 +1,13 @@
+commands:
+  - name: "app"
+    run: "go run -tags sqlite_fts5,sqlite_math_functions ./cmd/app"
+    watch:
+      - "**/*.go"
+      - "go.mod"
+      - ".env"
+
+  - name: "tailwind"
+    run: "./tailwindcss -i tailwind.css -o public/styles/app.css"
+    watch:
+      - "html/*.go"
+      - "tailwind.css"

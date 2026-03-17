@@ -38,9 +38,11 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.35.13 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sts v1.41.6 // indirect
 	github.com/aws/smithy-go v1.24.0 // indirect
+	github.com/bmatcuk/doublestar/v4 v4.10.0 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
+	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/go-chi/chi/v5 v5.2.5 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
@@ -84,6 +86,10 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250207221924-e9438ea467c6 // indirect
 	google.golang.org/grpc v1.70.0 // indirect
 	google.golang.org/protobuf v1.36.6 // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 	maragu.dev/goqite v0.4.0 // indirect
 	maragu.dev/migrate v0.6.0 // indirect
+	maragu.dev/redo v0.0.0-20260317104346-9bc2baa93c11 // indirect
 )
+
+tool maragu.dev/redo
