@@ -7,10 +7,6 @@ DATABASE_PATH ?= app.db
 benchmark:
 	go test -tags sqlite_fts5,sqlite_math_functions -bench . ./...
 
-.PHONY: build-css
-build-css: tailwindcss
-	./tailwindcss -i tailwind.css -o public/styles/app.css --minify
-
 .PHONY: build-docker
 build-docker:
 	docker build --platform linux/arm64 -t $(APP_NAME) .
@@ -62,7 +58,8 @@ test-up:
 up:
 	docker compose up -d versitygw
 
-.PHONY: watch-css
-watch-css: tailwindcss
-	./tailwindcss -i tailwind.css -o public/styles/app.css --watch
+.PHONY: watch
+watch: tailwindcss
+	go tool redo
+
 
