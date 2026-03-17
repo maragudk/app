@@ -9,7 +9,7 @@ benchmark:
 
 .PHONY: build-css
 build-css: tailwindcss
-		./tailwindcss -i tailwind.css -o public/styles/app.css --minify
+	./tailwindcss -i tailwind.css -o public/styles/app.css --minify
 
 .PHONY: build-docker
 build-docker:
@@ -60,7 +60,7 @@ test-up:
 
 .PHONY: up
 up:
-	@docker compose up -d versitygw
+	docker compose up -d versitygw
 
 .PHONY: watch-css
 watch-css: tailwindcss
