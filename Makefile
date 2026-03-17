@@ -1,4 +1,7 @@
-APP_NAME := app
+-include .env
+
+APP_NAME ?= app
+DATABASE_PATH ?= app.db
 
 .PHONY: benchmark
 benchmark:
@@ -15,6 +18,7 @@ build-docker:
 .PHONY: clean-all
 clean-all: down
 	docker volume rm $(APP_NAME)_versitygw
+	rm -f $(DATABASE_PATH) $(DATABASE_PATH)-wal $(DATABASE_PATH)-shm
 
 .PHONY: cover
 cover:

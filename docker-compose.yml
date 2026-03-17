@@ -1,9 +1,8 @@
-env_file:
-  - path: .env.docker
-    required: false
-
 services:
   versitygw:
+    env_file:
+      - path: .env.docker
+        required: false
     image: versity/versitygw:latest
     environment:
       ROOT_ACCESS_KEY: access
@@ -19,6 +18,9 @@ services:
       - versitygw:/var/lib
 
   versitygw-test:
+    env_file:
+      - path: .env.docker
+        required: false
     image: versity/versitygw:latest
     environment:
       ROOT_ACCESS_KEY: access
