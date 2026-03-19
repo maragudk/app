@@ -13,8 +13,8 @@ concurrency:
   cancel-in-progress: ${{ github.ref_name != 'main' }}
 
 jobs:
-  build:
-    name: Build
+  build-arm64:
+    name: Build arm64
     runs-on: ubuntu-24.04-arm
 
     steps:
@@ -22,8 +22,24 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Setup QEMU
-        uses: docker/setup-qemu-action@v4
+      - name: Setup Docker buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v7
+        with:
+          platforms: linux/arm64
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  build-amd64:
+    name: Build amd64
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
 
       - name: Setup Docker buildx
         uses: docker/setup-buildx-action@v4
@@ -31,7 +47,7 @@ jobs:
       - name: Build Docker image
         uses: docker/build-push-action@v7
         with:
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
