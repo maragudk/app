@@ -11,7 +11,6 @@ require (
 	maragu.dev/glue v0.0.0-20260305104648-eec5321380de
 	maragu.dev/gomponents v1.2.0
 	maragu.dev/gomponents-datastar v0.3.3
-	maragu.dev/gomponents-htmx v0.6.1
 	maragu.dev/httph v0.3.7
 	maragu.dev/is v0.3.1
 )
@@ -89,7 +88,7 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	maragu.dev/goqite v0.4.0 // indirect
 	maragu.dev/migrate v0.6.0 // indirect
-	maragu.dev/redo v0.0.0-20260317104346-9bc2baa93c11 // indirect
+	maragu.dev/redo v0.0.0-20260318124806-c50351b59a1b // indirect
 )
 
 tool maragu.dev/redo

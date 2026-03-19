@@ -11,23 +11,18 @@ import (
 	"maragu.dev/glue/html"
 	. "maragu.dev/gomponents"
 	data "maragu.dev/gomponents-datastar"
-	hx "maragu.dev/gomponents-htmx"
 	. "maragu.dev/gomponents/components"
 	. "maragu.dev/gomponents/html"
 )
 
 var hashOnce sync.Once
 var appCSSPath, appJSPath string
-var htmxJSPath, idiomorphExtJSPath string
 var datastarJSPath string
 
 func Page(props PageProps, body ...Node) Node {
 	hashOnce.Do(func() {
 		appCSSPath = getHashedPath("public/styles/app.css")
 		appJSPath = getHashedPath("public/scripts/app.js")
-
-		htmxJSPath = getHashedPath("public/scripts/htmx.js")
-		idiomorphExtJSPath = getHashedPath("public/scripts/idiomorph-ext.js")
 
 		datastarJSPath = getHashedPath("public/scripts/datastar.js")
 	})
@@ -38,16 +33,12 @@ func Page(props PageProps, body ...Node) Node {
 		Language:    "en",
 		Head: []Node{
 			Link(Rel("stylesheet"), Href(appCSSPath)),
-			Script(Src(htmxJSPath), Defer()),
-			Script(Src(idiomorphExtJSPath), Defer()),
 			Script(Type("module"), Src(datastarJSPath), Defer()),
 			Script(Src(appJSPath), Defer()),
 			Script(Src("https://cdn.usefathom.com/script.js"), Data("site", "123"), Defer()),
-			Meta(Name("htmx-config"), Content(`{"scrollIntoViewOnBoost":false}`)),
 			html.FavIcons("app"),
 		},
 		Body: []Node{Class("bg-primary-600 text-gray-900 dark:text-white"),
-			hx.Ext("morph"),
 			Div(Class("min-h-dvh flex flex-col justify-between"),
 				header(props),
 				Div(Class("grow bg-white dark:bg-gray-800 h-auto"),
