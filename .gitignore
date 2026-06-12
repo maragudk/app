@@ -1,10 +1,12 @@
+/*.log
+/.claude/worktrees/
 /.env
+/.env*.local
 /.env.docker
 /.env.test
-/.env*.local
+/.playwright-cli/
 /.worktrees/
 /app.db*
-/*.log
 /cover.out
 /go.work*
 /public/styles/app.css
