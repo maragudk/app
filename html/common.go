@@ -65,7 +65,7 @@ func footer() Node {
 		container(false,
 			Div(Class("flex items-center justify-center space-x-4 sm:space-x-8 py-2"),
 				data.Init("$counter = 0"), data.OnInterval("$counter++"),
-				a(Href("https://www.maragu.dev"), Text("by maragu "), Span(data.Text("$counter"))),
+				a(Href("https://www.maragu.dev"), Text("by maragu")),
 			),
 		),
 	)
