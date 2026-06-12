@@ -17,9 +17,6 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Setup QEMU
-        uses: docker/setup-qemu-action@v4
-
       - name: Setup Docker buildx
         uses: docker/setup-buildx-action@v4
 
@@ -34,7 +31,7 @@ jobs:
         uses: docker/build-push-action@v7
         with:
           push: true
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64
           tags: |
             ghcr.io/${{ github.repository }}:latest
             ghcr.io/${{ github.repository }}:${{ github.sha }}
