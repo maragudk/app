@@ -26,7 +26,7 @@ deps:
 
 .PHONY: down
 down:
-	@docker compose down versitygw
+	docker compose down versitygw
 
 .PHONY: fmt
 fmt:
@@ -59,5 +59,3 @@ up:
 .PHONY: watch
 watch: tailwindcss
 	go tool redo
-
-

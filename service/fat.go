@@ -19,9 +19,9 @@ type Fat struct {
 }
 
 type NewFatOptions struct {
-	Bucket *s3.Bucket
+	Bucket   *s3.Bucket
 	Database *sqlite.Database
-	Sender *postmark.Sender
+	Sender   *postmark.Sender
 }
 
 func NewFat(opts NewFatOptions) *Fat {

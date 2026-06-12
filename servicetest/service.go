@@ -34,8 +34,8 @@ func NewFat(t *testing.T, opts ...NewFatOption) *service.Fat {
 	}
 
 	return service.NewFat(service.NewFatOptions{
-		Bucket: s3test.NewBucket(t),
+		Bucket:   s3test.NewBucket(t),
 		Database: sqlitetest.NewDatabase(t, o.dbOpts...),
-		Sender: postmarktest.NewSender(t),
+		Sender:   postmarktest.NewSender(t),
 	})
 }
