@@ -1,4 +1,4 @@
-// Package sqlite provides a [Database], which is a simple wrapper around the database helper at [sql.Helper].
+// Package sqlite provides a [Database], which is a simple wrapper around [sql.Helper].
 // All storage-related functions are methods on [Database].
 package sqlite
 
