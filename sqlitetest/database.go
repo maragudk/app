@@ -1,4 +1,4 @@
-// Package sqltest provides testing helpers for the sql package.
+// Package sqlitetest provides testing helpers for the sqlite package.
 package sqlitetest
 
 import (
