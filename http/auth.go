@@ -17,7 +17,7 @@ type userGetter interface {
 	GetUser(ctx context.Context, id model.UserID) (model.User, error)
 }
 
-// AddUserToContext is [gluehttp.Middleware] to get add an authenticated user to the request context, if the user ID is available in the request context.
+// AddUserToContext is [gluehttp.Middleware] to add an authenticated user to the request context, if the user ID is available in the request context.
 func AddUserToContext(log *slog.Logger, ug userGetter) gluehttp.Middleware {
 	tracer := otel.Tracer("app/http")
 
