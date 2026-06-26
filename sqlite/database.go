@@ -1,4 +1,4 @@
-// Package sqlite provides a [Database], which is a simple wrapper around the stdlib database connection pool at [sql.DB].
+// Package sqlite provides a [Database], which is a simple wrapper around [sql.Helper].
 // All storage-related functions are methods on [Database].
 package sqlite
 
