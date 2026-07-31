@@ -271,3 +271,62 @@ ones are waiting has to be pruned as they get wired. Worth watching that it stay
 
 The first operation that sends an email wires the sender through its own wiring function, and the
 sentence in `Setup`'s doc loses a name. Same for the bucket.
+
+## Step 4: stock the tracer alongside the logger
+
+**Author:** claude
+
+### Prompt Context
+
+**Task:** give `Fat` a `tracer trace.Tracer` field, initialized in `NewFat` with
+`otel.Tracer("app/service")`, ready for the first operation that traces.
+
+**Interpretation:** the same "plumbing is the product" reasoning as the bucket and the sender, applied
+to ambient state rather than to a capability.
+
+**Inferred intent:** two stocked-and-waiting fields make the policy legible. One on its own reads as
+an oversight, which is how the reviewers in step 2 read `Fat.log`.
+
+### What I did
+
+Added `tracer trace.Tracer` to `Fat`, set in `NewFat` from `otel.Tracer("app/service")`, matching the
+`otel.Tracer("app/http")` in `/http/auth.go`. It is not a `NewFatOptions` field: the tracer is the
+package's own, which the options doc now says. `TestNewFat` gained a subtest asserting `NewFat`
+stocks it, which also means both ambient fields have a reader.
+
+### Why
+
+An operation that wants a span should find a tracer on `f` rather than reaching for `otel` itself, so
+that the instrumentation name stays one decision for the package instead of one per operation.
+
+### What worked
+
+Nothing surprising: `go vet`, `make lint` at `0 issues.`, suite green. `unused` leaves the field alone
+for the same reason it leaves `log` alone — the composite literal in `NewFat` counts as a use — and
+the new subtest reads it besides.
+
+### What didn't work
+
+Nothing failed here.
+
+### What I learned
+
+The two ambient fields answer the objection raised against the first one. A single unused field looks
+like something left behind; a stocked logger and a stocked tracer look like what they are, which is a
+template deciding what every operation gets for free.
+
+### What was tricky
+
+Only the wording. Saying in the `Fat` doc that these are "waiting for their first operation" would go
+stale the moment one uses them, so the doc just names what `Fat` carries, and the awaiting-first-use
+status lives here and in the pull request. `Setup`'s parameter note is different: unused parameters
+need the explanation on the spot, or a reader files them as a mistake.
+
+### What warrants review
+
+Whether `otel.Tracer("app/service")` is the instrumentation name wanted long term. It mirrors
+`app/http`, so the two are at least consistent.
+
+### Future work
+
+The first operation to open a span uses `f.tracer`, and the first to log uses `f.log`.

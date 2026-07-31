@@ -14,6 +14,12 @@ func TestNewFat(t *testing.T) {
 
 		is.True(t, f.log.Handler() == slog.DiscardHandler)
 	})
+
+	t.Run("stocks the tracer the package traces with", func(t *testing.T) {
+		f := NewFat(NewFatOptions{})
+
+		is.True(t, f.tracer != nil)
+	})
 }
 
 func TestSetup(t *testing.T) {
