@@ -2,40 +2,31 @@
 package servicetest
 
 import (
+	"log/slog"
 	"testing"
 
-	"maragu.dev/glue/email/postmarktest"
-	"maragu.dev/glue/s3test"
-
 	"app/service"
-	"app/sqlitetest"
 )
 
-type NewFatOption func(*newFatOptions)
-
-type newFatOptions struct {
-	dbOpts []sqlitetest.NewDatabaseOption
-}
-
-// WithSQLiteTestOptions passes options to the underlying sqlitetest.NewDatabase call.
-func WithSQLiteTestOptions(opts ...sqlitetest.NewDatabaseOption) NewFatOption {
-	return func(o *newFatOptions) {
-		o.dbOpts = append(o.dbOpts, opts...)
-	}
-}
-
-// NewFat for testing, with optional options.
-func NewFat(t *testing.T, opts ...NewFatOption) *service.Fat {
+// NewFat for testing, with a logger of its own.
+//
+// No operation is wired: a test wires the ones it exercises, with the capabilities it is already
+// asserting against.
+func NewFat(t *testing.T) *service.Fat {
 	t.Helper()
 
-	o := &newFatOptions{}
-	for _, opt := range opts {
-		opt(o)
-	}
-
 	return service.NewFat(service.NewFatOptions{
-		Bucket:   s3test.NewBucket(t),
-		Database: sqlitetest.NewDatabase(t, o.dbOpts...),
-		Sender:   postmarktest.NewSender(t),
+		Log: slog.New(slog.NewTextHandler(&testWriter{t: t}, nil)),
 	})
+}
+
+// testWriter logs through the test it belongs to, so an operation says what it did under the test
+// that ran it and stays quiet unless that test fails.
+type testWriter struct {
+	t *testing.T
+}
+
+func (t *testWriter) Write(p []byte) (n int, err error) {
+	t.t.Log(string(p))
+	return len(p), nil
 }
