@@ -8,10 +8,12 @@ import (
 	"maragu.dev/env"
 	"maragu.dev/errors"
 	"maragu.dev/glue/app"
+	"maragu.dev/glue/aws"
 	"maragu.dev/glue/email"
 	"maragu.dev/glue/email/postmark"
 	gluehttp "maragu.dev/glue/http"
 	gluejobs "maragu.dev/glue/jobs"
+	"maragu.dev/glue/s3"
 	"maragu.dev/glue/sql"
 	"maragu.dev/glue/sqlitestore"
 
@@ -52,6 +54,17 @@ func start(ctx context.Context, log *slog.Logger, eg app.Goer) error {
 		return errors.Wrap(err, "error migrating database")
 	}
 
+	awsConfig, err := aws.LoadDefaultConfig(ctx)
+	if err != nil {
+		return err
+	}
+
+	bucket := s3.NewBucket(s3.NewBucketOptions{
+		Config:    awsConfig,
+		Name:      env.GetStringOrDefault("S3_BUCKET_NAME", "bucket"),
+		PathStyle: env.GetBoolOrDefault("S3_PATH_STYLE", false),
+	})
+
 	runner := gluejobs.NewRunner(gluejobs.NewRunnerOpts{
 		Log:   log.With("component", "jobs.Runner"),
 		Queue: db.H.JobsQ,
@@ -81,7 +94,7 @@ func start(ctx context.Context, log *slog.Logger, eg app.Goer) error {
 	svc := service.NewFat(service.NewFatOptions{
 		Log: log.With("component", "service.Fat"),
 	})
-	service.Setup(svc, db)
+	service.Setup(svc, bucket, db, sender)
 
 	store, err := sqlitestore.New(ctx, db.H.DB.DB)
 	if err != nil {

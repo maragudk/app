@@ -199,3 +199,75 @@ strike.
 If the S3 scaffolding is meant to stay in the template, it needs an operation that uses it; if not,
 the compose services, CI service containers, Makefile targets and environment variables should go
 together with a `go mod tidy`.
+
+## Step 3: keep unused capabilities plumbed through `Setup`
+
+**Author:** claude
+
+### Prompt Context
+
+**Task:** in this repo the sender stays even though no operation uses it, and so does any other
+dependency in the same position — the bucket, on inspection. Rather than sitting on `Fat`, an unused
+capability belongs in the composition path: a `Setup` parameter, with a note that it awaits the first
+operation to wire it.
+
+**Interpretation:** reverse step 1's deletion of the S3 setup from `/cmd/app/main.go`, and route both
+capabilities through `Setup` instead of dropping them.
+
+**Inferred intent:** this is a starter template, so the plumbing is the product. A project that
+starts here and writes its first email-sending operation should find the sender already flowing.
+
+### What I did
+
+`Setup` is now `Setup(f *Fat, bucket *s3.Bucket, db *sqlite.Database, sender *postmark.Sender)`, with
+a doc sentence saying that a capability no operation wires yet is a parameter all the same, and
+naming the two that are waiting. `/cmd/app/main.go` builds the bucket again — the
+`aws.LoadDefaultConfig` and `s3.NewBucket` block is restored exactly as it was — and passes both to
+`Setup`. `TestSetup` passes three nils.
+
+Checked the bucket before restoring it: on `main` it reached `service.NewFat` and nothing else, so it
+is in exactly the sender's position. The sender also feeds `jobs.Register`, so it was never at risk
+of disappearing from `main`.
+
+### Why
+
+`Fat` still holds no capabilities, so the guarantee the pattern is for is untouched: an operation can
+still only reach what its wiring function was handed. What changes is where an unwired capability
+waits — in the composition path rather than in the struct, where it costs nothing and is one wiring
+function away from use.
+
+### What worked
+
+Unused function parameters are legal Go and `golangci-lint` has nothing to say about them: `0 issues.`
+The diff of `/cmd/app/main.go` against `main` is now three lines, all of them the wiring change.
+
+Everything step 2 recorded as unfinished S3 fallout is moot. The bucket is constructed again, so the
+compose services, CI service container, Makefile targets and `.env.example` entries all mean
+something, and `go mod tidy` has nothing to remove.
+
+### What didn't work
+
+Nothing failed here.
+
+### What I learned
+
+"Delete what nothing uses" is a repo-dependent instinct. In an application it is right, and it was
+right in the project this pattern came from. In a starter template the unused plumbing is a large
+part of what the reader came for, and deleting it optimises for the wrong repository.
+
+### What was tricky
+
+Finding the placement that keeps the pattern honest. On `Fat` the capability would be reachable by
+every operation, which is the thing the change exists to prevent. As a `Setup` parameter it is
+reachable by nothing until a wiring function asks for it. The cost is that `service` now imports
+`postmark` and `s3` for a signature alone.
+
+### What warrants review
+
+`Setup`'s parameter list is where unused capabilities accumulate, and the doc sentence naming which
+ones are waiting has to be pruned as they get wired. Worth watching that it stays accurate.
+
+### Future work
+
+The first operation that sends an email wires the sender through its own wiring function, and the
+sentence in `Setup`'s doc loses a name. Same for the bucket.

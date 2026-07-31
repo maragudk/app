@@ -6,6 +6,9 @@ import (
 	"context"
 	"log/slog"
 
+	"maragu.dev/glue/email/postmark"
+	"maragu.dev/glue/s3"
+
 	"app/model"
 	"app/sqlite"
 )
@@ -46,8 +49,10 @@ func NewFat(opts NewFatOptions) *Fat {
 // Setup every operation of the given [Fat] with the real capabilities, named concretely: the narrow
 // interfaces exist for the operations rather than for this.
 //
-// The wiring functions it calls are the list of what each operation actually depends on.
-func Setup(f *Fat, db *sqlite.Database) {
+// The wiring functions it calls are the list of what each operation actually depends on. A capability
+// that no operation wires yet is a parameter all the same, so the first operation to need one finds it
+// already plumbed: bucket and sender are waiting like that.
+func Setup(f *Fat, bucket *s3.Bucket, db *sqlite.Database, sender *postmark.Sender) {
 	GetUser(f, db)
 }
 
