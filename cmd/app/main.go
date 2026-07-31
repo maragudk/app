@@ -92,10 +92,9 @@ func start(ctx context.Context, log *slog.Logger, eg app.Goer) error {
 	})
 
 	svc := service.NewFat(service.NewFatOptions{
-		Bucket:   bucket,
-		Database: db,
-		Sender:   sender,
+		Log: log.With("component", "service.Fat"),
 	})
+	service.Setup(svc, bucket, db, sender)
 
 	store, err := sqlitestore.New(ctx, db.H.DB.DB)
 	if err != nil {
