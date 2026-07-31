@@ -38,4 +38,20 @@ func TestFat_GetUser(t *testing.T) {
 
 		_, _ = fat.GetUser(t.Context(), model.UserID("u_f4958e9cd27a553b08092c790ea44fbb"))
 	})
+
+	// The other end of the same lifecycle: wiring happens once, so a second one is a mistake too, and
+	// the two panics together mean an operation is called neither before nor after its one wiring.
+	t.Run("panics when the operation is wired twice", func(t *testing.T) {
+		defer func() {
+			r := recover()
+			is.True(t, r != nil, "expected a panic")
+			is.Equal(t, "service: GetUser already wired", fmt.Sprint(r))
+		}()
+
+		fat := servicetest.NewFat(t)
+		db := sqlitetest.NewDatabase(t)
+
+		service.GetUser(fat, db)
+		service.GetUser(fat, db)
+	})
 }

@@ -330,3 +330,71 @@ Whether `otel.Tracer("app/service")` is the instrumentation name wanted long ter
 ### Future work
 
 The first operation to open a span uses `f.tracer`, and the first to log uses `f.log`.
+
+## Step 5: make the wire-once rule enforced instead of documented
+
+**Author:** claude
+
+### Prompt Context
+
+**Task:** review feedback on the `Fat` doc's lifecycle sentence — rewiring an already wired service
+should panic rather than be described as a thing not to do. Guard in each wiring function, trim the
+doc to match, and test the panic and its message.
+
+**Interpretation:** the doc sentence added in step 2 was a rule with nothing behind it; turn it into
+code and let the doc state the consequence.
+
+**Inferred intent:** a rule a reader has to remember is weaker than one the program refuses to break,
+and this one is cheap to enforce.
+
+### What I did
+
+`GetUser` now checks its field before setting it and panics with `service: GetUser already wired`.
+The `Fat` doc keeps the concurrency consequence — fields written once by the wiring functions, read
+after that, so a wired `Fat` is safe for concurrent use — and the clause about rewiring became a
+statement that it panics. Added a subtest asserting the panic and its exact message by wiring
+`GetUser` twice on one `Fat`.
+
+### Why
+
+The two panics bracket the lifecycle from both ends. The delegate's panic says an operation was
+called before it was wired; this one says it was wired twice. Between them, an operation runs against
+exactly one set of capabilities, chosen once, which is the property the whole change is for.
+
+### What worked
+
+Verified the test earns its place by deleting the guard and running it:
+
+```
+--- FAIL: TestFat_GetUser/panics_when_the_operation_is_wired_twice
+    fat_test.go:47: expected a panic
+```
+
+The subtest sits next to the unwired-method panic, so the two ends of the lifecycle read together.
+
+### What didn't work
+
+Nothing failed here.
+
+### What I learned
+
+Writing the guard made the reason for it sharper than the doc sentence had been. The question is not
+really whether rewiring races — it is that a second wiring silently replaces the first, so an
+operation would run against capabilities nobody at the call site chose.
+
+### What was tricky
+
+Only where the subtest belongs. It exercises the package-level `service.GetUser` rather than the
+method, which argues for a `TestGetUser` of its own, but splitting the two panics across two test
+functions hides that they are one lifecycle. It went next to the unwired panic.
+
+### What warrants review
+
+Every future wiring function needs the same three lines, and nothing enforces that — the same
+hand-maintenance problem `TestSetup` had before it became reflective. A helper along the lines of
+`mustNotBeWired(f.getUser, "GetUser")` would at least make an omission visible as a missing call.
+
+### Future work
+
+If the wiring functions multiply, fold the guard and its message into one helper, so a new operation
+cannot pick up half the lifecycle and skip the other half.

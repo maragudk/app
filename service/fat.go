@@ -22,8 +22,8 @@ import (
 // given — so an operation cannot reach a capability it did not declare, since Fat holds none itself,
 // and a method panics if never wired.
 //
-// The func fields are written by the wiring functions and only read after that, so a wired Fat is
-// safe for concurrent use, and rewiring one that is already in use is not.
+// The func fields are written once by the wiring functions and only read after that, so a wired Fat
+// is safe for concurrent use. Wiring an operation that is already wired panics.
 type Fat struct {
 	log    *slog.Logger
 	tracer trace.Tracer
@@ -66,7 +66,14 @@ type userGetter interface {
 }
 
 // GetUser wires [Fat.GetUser] to the given store.
+//
+// Panics if the operation is already wired, since that is a composition mistake rather than a way to
+// swap a store out from under a running operation.
 func GetUser(f *Fat, db userGetter) {
+	if f.getUser != nil {
+		panic("service: GetUser already wired")
+	}
+
 	f.getUser = db.GetUser
 }
 
