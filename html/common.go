@@ -31,14 +31,15 @@ func Page(props PageProps, body ...Node) Node {
 		Title:       props.Title,
 		Description: props.Description,
 		Language:    "en",
-		Head: []Node{
+		Head: Group{
 			Link(Rel("stylesheet"), Href(appCSSPath)),
 			Script(Type("module"), Src(datastarJSPath), Defer()),
 			Script(Src(appJSPath), Defer()),
 			Script(Src("https://cdn.usefathom.com/script.js"), Data("site", "123"), Defer()),
 			html.FavIcons("app"),
 		},
-		Body: []Node{Class("bg-primary-600 text-gray-900 dark:text-white"),
+		HTMLAttrs: Group{Class("scheme-light dark:scheme-dark")},
+		Body: Group{Class("bg-primary-600 text-gray-900 dark:text-white"),
 			Div(Class("min-h-dvh flex flex-col justify-between"),
 				header(props),
 				Div(Class("grow bg-white dark:bg-gray-800 h-auto"),
