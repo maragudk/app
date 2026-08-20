@@ -3,12 +3,12 @@ module app
 go 1.26
 
 require (
-	github.com/mattn/go-sqlite3 v1.14.34
+	github.com/mattn/go-sqlite3 v1.14.49
 	go.opentelemetry.io/otel v1.44.0
 	go.opentelemetry.io/otel/trace v1.44.0
 	maragu.dev/env v0.2.0
 	maragu.dev/errors v0.3.0
-	maragu.dev/glue v0.0.0-20260729103659-9e8866397216
+	maragu.dev/glue v0.0.0-20260820083844-210b9717c337
 	maragu.dev/gomponents v1.3.0
 	maragu.dev/gomponents-datastar v0.3.3
 	maragu.dev/httph v0.3.7

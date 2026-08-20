@@ -213,3 +213,118 @@ from the local context rather than a Git clone, then confirm in Honeycomb that n
 
 None beyond what Step 1 already named: `maragudk/glue#192` (log the version on startup) and the
 missing `.dockerignore` are both out of scope here and tracked separately.
+
+## Step 3: Pick up the `glue` version-logging fix
+
+**Author:** builder
+
+### Prompt Context
+
+**Verbatim prompt:** Follow-up task in the same worktree. Bump `maragu.dev/glue` to pick up commit
+`210b9717` ("Log the service version on app startup"), which closes `maragudk/glue#192` from
+Step 1's future work. Confirm no call sites need changes, build with
+`-tags sqlite_fts5,sqlite_math_functions`, and verify end to end by running the binary and
+checking the "Starting app" log line's `version` field. Also check whether Go's VCS stamping
+behaves the same from inside this git worktree (where `.git` is a file, not a directory) as it
+does from a normal checkout, since that was unverified.
+
+**Interpretation:** A dependency bump plus verification, not new development.
+
+**Inferred intent:** Close out `maragudk/glue#192` now that it's landed upstream, and flag
+anything about this repo's worktree-based dev setup that could mislead someone reading
+`service.version` locally.
+
+### What I did
+
+`go get maragu.dev/glue@main` first resolved to `v0.0.0-20260819080311-c34a99649e6f`, whose
+`app/app.go` still logged `"Starting app"` with no `version` field — the public module proxy's
+`@main` cache was stale. `GOPROXY=direct go get maragu.dev/glue@main` resolved to
+`v0.0.0-20260820083844-210b9717c337`, the exact commit named in the task, confirmed by grepping
+its `app/app.go` for the described `version := getVersion()` / `log.InfoContext(...,"version",
+version)` change. `GOPROXY=direct go mod tidy` followed; it also bumped
+`github.com/mattn/go-sqlite3` v1.14.34 → v1.14.49 as a transitive change in `glue`'s own `go.mod`.
+
+`go doc maragu.dev/glue/app.Start` confirms the exported signature (`func Start(startCallback
+StartFunc)`) is unchanged, and `go build -tags sqlite_fts5,sqlite_math_functions ./...` plus `go
+vet` (same tags) both pass with zero edits to `/cmd/app/main.go` or any other call site.
+
+Built the binary to a scratch path and ran it briefly (no `.env` in this worktree, so all
+`maragu.dev/env` defaults applied). First log line:
+
+```json
+{"msg":"Starting app","name":"App","version":"f58635ea418c494cc3096b8390f07732caa2d14e"}
+```
+
+A real 40-char sha, not `unknown` — but it's the wrong sha: `f58635e...` is `main`'s HEAD from
+before Step 2's commit, not this worktree's actual HEAD (`bd84f9d...`, confirmed with `git
+rev-parse HEAD`). A `-a` rebuild produced the identical stamp, ruling out build-cache staleness.
+The worktree's own git metadata explains it: `cat .git` shows `gitdir:
+.../app/.git/worktrees/otel-service-version`, whose `HEAD` file correctly reads `ref:
+refs/heads/worktree-otel-service-version` — but `git rev-parse --git-common-dir` resolves to
+`/Users/maragubot/Developer/app/.git`, and *that* directory's `HEAD` reads `ref: refs/heads/main`.
+Go's VCS stamping picked up the common dir's HEAD, not the worktree-specific one. I couldn't
+build from `/Users/maragubot/Developer/app` directly to compare — this session's sandbox refused
+a `git -C /Users/maragubot/Developer/app ...` command outright — but the ref-file evidence alone
+already isolates the cause, and since this project nests worktrees inside the main checkout's own
+tree (`.claude/worktrees/<name>`), it's consistent with Go's repo-root detection not special-casing
+a `.git` *file* and falling through to the nearest ancestor `.git` *directory* it can find.
+
+Past that log line the run continued normally (DB connected, migrations found, job runner
+started) then failed on `listen tcp :8080: bind: address already in use` — expected, since `make
+watch` is presumably already running elsewhere on this machine, and unrelated to this change.
+Cleaned up the `app.db*` files the run created (gitignored, but tidied anyway).
+
+Did not run `make test`: it needs `docker compose up versitygw-test`, and there is no Docker in
+this environment.
+
+### Why
+
+The value here was confirming the bump is inert at the call-site level and getting a real
+observed log line rather than trusting the diff description. The worktree check turned up a
+subtler failure mode than the one anticipated (`unknown`): a plausible, real sha that's simply
+the wrong commit — worth recording precisely because a naive "is it `unknown`" check wouldn't
+catch it.
+
+### What worked
+
+`GOPROXY=direct` cleanly bypassed the stale proxy cache with no other workarounds needed. The
+worktree's own git metadata was sufficient to explain the stamping discrepancy without a
+side-by-side build.
+
+### What didn't work
+
+The first `go get @main` silently resolved to a version missing the target commit — no error, it
+just wasn't current, caught only by grepping the fetched source. `make test` wasn't runnable at
+all: no Docker in this environment (consistent with Step 1's `docker pull` failure), so I'm
+reporting that rather than claiming any test result.
+
+### What I learned
+
+The public Go proxy's `@main` resolution can lag the real branch tip; `GOPROXY=direct` is the
+fix when freshness matters more than caching. Separately: in this repo's worktrees-nested-inside-
+the-checkout layout, a binary built inside a worktree stamps `vcs.revision` from the *main*
+checkout's HEAD, not the worktree's own branch tip. That's irrelevant to Step 2's CD fix — CD
+never builds inside a nested worktree — but it means `service.version` from a worktree-built
+binary shouldn't be trusted as evidence of which commit is running; `git rev-parse HEAD` stays
+accurate, only Go's own VCS auto-detection is fooled.
+
+### What was tricky
+
+Ruling out stale build cache vs. genuine misresolution took an extra `-a` rebuild to be sure. The
+sandbox boundary blocked the most direct confirmation (building the same source from
+`/Users/maragubot/Developer/app` to diff the stamps), so the explanation rests on git-metadata
+inspection rather than a side-by-side build.
+
+### What warrants review
+
+Confirm `go.mod`/`go.sum` pin `maragu.dev/glue v0.0.0-20260820083844-210b9717c337` and
+`github.com/mattn/go-sqlite3 v1.14.49`, and that `/cmd/app/main.go` is untouched. The
+worktree-stamping finding is worth an independent check from `/Users/maragubot/Developer/app`
+directly — I'd expect it to stamp its own HEAD correctly there, matching what CD's checkout
+produces, but couldn't verify it from this sandboxed session.
+
+### Future work
+
+None proposed as code — this is a local-dev-only observation with no effect on the shipped CD
+fix. If it's worth guarding against, it'd mean documenting that `service.version` from a
+worktree-built binary isn't trustworthy for manual verification.
