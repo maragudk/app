@@ -5,7 +5,6 @@ import (
 	"log/slog"
 	"net/http"
 
-	"go.opentelemetry.io/otel"
 	gluehttp "maragu.dev/glue/http"
 
 	"app/model"
@@ -19,13 +18,9 @@ type userGetter interface {
 
 // AddUserToContext is [gluehttp.Middleware] to add an authenticated user to the request context, if the user ID is available in the request context.
 func AddUserToContext(log *slog.Logger, ug userGetter) gluehttp.Middleware {
-	tracer := otel.Tracer("app/http")
-
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			ctx, span := tracer.Start(r.Context(), "AddUserToContext")
-			defer span.End()
-			r = r.WithContext(ctx)
+			ctx := r.Context()
 
 			userID := gluehttp.GetUserIDFromContext(ctx)
 			if userID == nil {
