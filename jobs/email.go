@@ -8,13 +8,14 @@ import (
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
+	"maragu.dev/glue/email"
 	"maragu.dev/glue/jobs"
 
 	"app/model"
 )
 
 type emailSender interface {
-	SendTransactional(ctx context.Context, name string, emailAddress model.EmailAddress, subject, preheader, templateName string, kw model.Keywords) error
+	SendTransactional(ctx context.Context, opts email.SendOptions) error
 }
 
 func SendEmail(log *slog.Logger, sender emailSender) jobs.Func {
@@ -43,6 +44,12 @@ func SendEmail(log *slog.Logger, sender emailSender) jobs.Func {
 }
 
 func sendLoginEmail(sender emailSender, ctx context.Context, jd model.SendEmailJobData) error {
-	subject := fmt.Sprintf("Welcome, %v!", jd.Name)
-	return sender.SendTransactional(ctx, jd.Name, jd.Email, subject, "Click the link to log in.", "login", jd.Keywords)
+	return sender.SendTransactional(ctx, email.SendOptions{
+		Keywords:  jd.Keywords,
+		Preheader: "Click the link to log in.",
+		Subject:   fmt.Sprintf("Welcome, %v!", jd.Name),
+		Template:  "login",
+		To:        jd.Email,
+		ToName:    jd.Name,
+	})
 }
