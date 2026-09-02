@@ -10,7 +10,7 @@ require (
 	maragu.dev/errors v0.3.0
 	maragu.dev/glue v0.0.0-20260824085602-5e40bf3e8a1d
 	maragu.dev/gomponents v1.3.0
-	maragu.dev/gomponents-datastar v0.3.3
+	maragu.dev/gomponents-datastar v0.4.0
 	maragu.dev/httph v0.3.7
 	maragu.dev/is v0.3.1
 )
