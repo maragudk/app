@@ -20,7 +20,7 @@ func TestPage(t *testing.T) {
 	})
 
 	t.Run("renders the Datastar smoke test attribute, with the expression HTML-escaped", func(t *testing.T) {
-		want := `data-init="console.debug(&#39;Datastar loaded&#39;)"`
+		want := `data-init="console.log(&#39;Datastar loaded&#39;)"`
 
 		is.True(t, strings.Contains(render(t), want), "no "+want)
 	})
