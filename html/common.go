@@ -65,7 +65,7 @@ func footer() Node {
 	return Div(
 		container(false,
 			Div(Class("flex items-center justify-center space-x-4 sm:space-x-8 py-2"),
-				data.Init("$counter = 0"), data.OnInterval("$counter++"),
+				data.Init("console.log('Datastar loaded')"),
 				a(Href("https://www.maragu.dev"), Text("by maragu")),
 			),
 		),
