@@ -19,11 +19,10 @@ func TestPage(t *testing.T) {
 		is.True(t, strings.Contains(tag, `type="module"`), "Datastar script tag is not a module: "+tag)
 	})
 
-	t.Run("renders the Datastar attributes for the counter", func(t *testing.T) {
-		output := render(t)
+	t.Run("renders the Datastar smoke test attribute, with the expression HTML-escaped", func(t *testing.T) {
+		want := `data-init="console.debug(&#39;Datastar loaded&#39;)"`
 
-		is.True(t, strings.Contains(output, `data-init="$counter = 0"`), `no data-init="$counter = 0"`)
-		is.True(t, strings.Contains(output, `data-on-interval="$counter++"`), `no data-on-interval="$counter++"`)
+		is.True(t, strings.Contains(render(t), want), "no "+want)
 	})
 }
 
