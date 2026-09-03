@@ -12,96 +12,17 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref_name }}
   cancel-in-progress: ${{ github.ref_name != 'main' }}
 
+permissions:
+  contents: read
+
 jobs:
-  build-arm64:
-    name: Build arm64
-    runs-on: ubuntu-24.04-arm
-
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          persist-credentials: false
-
-      - name: Setup Docker buildx
-        uses: docker/setup-buildx-action@v4
-
-      - name: Build Docker image
-        uses: docker/build-push-action@v7
-        with:
-          platforms: linux/arm64
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-  build-amd64:
-    name: Build amd64
-    runs-on: ubuntu-24.04
-
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          persist-credentials: false
-
-      - name: Setup Docker buildx
-        uses: docker/setup-buildx-action@v4
-
-      - name: Build Docker image
-        uses: docker/build-push-action@v7
-        with:
-          platforms: linux/amd64
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+  lint:
+    uses: maragudk/workflows/.github/workflows/lint.yml@main
 
   test:
-    name: Test
-    runs-on: ubuntu-latest
+    uses: maragudk/workflows/.github/workflows/test.yml@main
+    with:
+      s3: true
 
-    services:
-      versitygw:
-        image: versity/versitygw:latest
-        ports:
-          - "7072:7070"
-        env:
-          ROOT_ACCESS_KEY: "access"
-          ROOT_SECRET_KEY: "secretsecret"
-          VGW_BACKEND: "posix"
-          VGW_BACKEND_ARG: "/var/lib"
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-        with:
-          persist-credentials: false
-
-      - name: Setup Go
-        uses: actions/setup-go@v7
-        with:
-          go-version-file: go.mod
-          check-latest: true
-
-      - name: Build
-        run: go build -tags sqlite_fts5,sqlite_math_functions ./...
-
-      - name: Test
-        run: go test -tags sqlite_fts5,sqlite_math_functions -shuffle on ./...
-
-  lint:
-    name: Lint
-    runs-on: ubuntu-latest
-    if: ${{ github.triggering_actor != 'dependabot[bot]' }}
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-        with:
-          persist-credentials: false
-
-      - name: Setup Go
-        uses: actions/setup-go@v7
-        with:
-          go-version-file: go.mod
-          check-latest: true
-
-      - name: Lint
-        uses: golangci/golangci-lint-action@v9
-        with:
-          version: latest
+  build:
+    uses: maragudk/workflows/.github/workflows/build.yml@main

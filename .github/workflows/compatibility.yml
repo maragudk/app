@@ -10,42 +10,6 @@ permissions:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
-
-    strategy:
-      fail-fast: false
-      matrix:
-        go:
-          - { go-version: stable }
-          - { go-version-file: go.mod }
-        deps:
-          - locked
-          - latest
-
-    services:
-      versitygw:
-        image: versity/versitygw:latest
-        ports:
-          - "7072:7070"
-        env:
-          ROOT_ACCESS_KEY: "access"
-          ROOT_SECRET_KEY: "secretsecret"
-          VGW_BACKEND: "posix"
-          VGW_BACKEND_ARG: "/var/lib"
-
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          persist-credentials: false
-
-      - uses: actions/setup-go@v7
-        with:
-          go-version: ${{ matrix.go.go-version }}
-          go-version-file: ${{ matrix.go.go-version-file }}
-
-      - name: Update to latest deps
-        if: matrix.deps == 'latest'
-        run: go get -u -t ./...
-
-      - name: Test
-        run: go test -tags sqlite_fts5,sqlite_math_functions -shuffle on ./...
+    uses: maragudk/workflows/.github/workflows/compatibility.yml@main
+    with:
+      s3: true
