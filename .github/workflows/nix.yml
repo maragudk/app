@@ -54,20 +54,6 @@ jobs:
           test -f result/public/scripts/datastar.js
           test -d result/sqlite/migrations
 
-      - name: Check dev shell
-        run: |
-          nix develop --command bash -euo pipefail -c '
-            go version
-            go version | grep -q "go1\.27"
-            for tool in tailwindcss golangci-lint goimports sqlite3; do
-              command -v "$tool"
-            done
-            golangci-lint version
-            golangci-lint version | grep -q "version 2\.15\.0 built with go1\.27"
-            CGO_ENABLED=1 go build -tags sqlite_fts5,sqlite_math_functions -o /dev/null ./cmd/app
-            golangci-lint run
-          '
-
       - name: Smoke test
         working-directory: result
         run: |
@@ -89,4 +75,5 @@ jobs:
           curl -fsS -o /dev/null "http://localhost:8080$css_path"
 
       - name: Check app migrations ran
-        run: nix develop --command sqlite3 "$RUNNER_TEMP/app.db" .tables | tee /dev/stderr | grep -qw users
+        # Take sqlite from the flake's locked nixpkgs, since there's no dev shell.
+        run: nix shell --inputs-from . nixpkgs#sqlite --command sqlite3 "$RUNNER_TEMP/app.db" .tables | tee /dev/stderr | grep -qw users

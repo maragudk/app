@@ -1,5 +1,5 @@
 {
-  description = "Experimental Nix flake for building and developing the app";
+  description = "Experimental Nix flake for building the app";
 
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-26.05";
 
@@ -87,38 +87,6 @@
             '';
 
             meta.mainProgram = "app";
-          };
-        }
-      );
-
-      devShells = forAllSystems (
-        pkgs:
-        let
-          # golangci-lint 2.12.2 in nixos-26.05 is built with Go 1.26 and can't lint Go 1.27 code,
-          # so build a newer release with Go 1.27, like nixpkgs-unstable does.
-          golangci-lint =
-            (pkgs.golangci-lint.override { buildGo126Module = pkgs.buildGo127Module; }).overrideAttrs
-              (finalAttrs: _: {
-                version = "2.15.0";
-                src = pkgs.fetchFromGitHub {
-                  owner = "golangci";
-                  repo = "golangci-lint";
-                  tag = "v${finalAttrs.version}";
-                  hash = "sha256-m9PoJHescRuT9DiKsb6LL+lQlc7RKAWDiRyf8pNMffA=";
-                };
-                vendorHash = "sha256-gWbhZc/BJwuiwyTMaR1ShEBI1lo0bGLCXsdj5n91baw=";
-                doCheck = false;
-              });
-        in
-        {
-          default = pkgs.mkShell {
-            packages = [
-              pkgs.go_1_27
-              pkgs.tailwindcss_4
-              golangci-lint
-              pkgs.gotools
-              pkgs.sqlite
-            ];
           };
         }
       );
