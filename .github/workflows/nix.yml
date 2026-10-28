@@ -1,0 +1,79 @@
+name: Nix
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref_name }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  nix:
+    name: nix (${{ matrix.system }})
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            system: x86_64-linux
+          - os: ubuntu-24.04-arm
+            system: aarch64-linux
+          - os: macos-latest
+            system: aarch64-darwin
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: cachix/install-nix-action@v31.11.2
+
+      - name: Check system
+        run: test "$(nix eval --impure --raw --expr builtins.currentSystem)" = "${{ matrix.system }}"
+
+      - name: Check flake
+        run: nix flake check --no-update-lock-file --print-build-logs
+
+      - name: Build
+        run: nix build --print-build-logs
+
+      - name: Check build output
+        run: |
+          ls -lR result/
+          test -x result/bin/app
+          test -s result/public/styles/app.css
+          # min-w-12 is only used in glue's html package, so this checks Tailwind scanned the vendored glue code.
+          grep -q '\.min-w-12' result/public/styles/app.css
+          test -f result/public/scripts/datastar.js
+          test -d result/sqlite/migrations
+
+      - name: Smoke test
+        working-directory: result
+        run: |
+          DATABASE_PATH="$RUNNER_TEMP/app.db" SERVER_ADDRESS=localhost:8080 ./bin/app > "$RUNNER_TEMP/app.log" 2>&1 &
+          pid=$!
+          trap 'kill $pid 2>/dev/null || true; cat "$RUNNER_TEMP/app.log"' EXIT
+
+          for i in $(seq 1 30); do
+            if curl -fs -o "$RUNNER_TEMP/index.html" http://localhost:8080/; then
+              break
+            fi
+            sleep 1
+          done
+          test -s "$RUNNER_TEMP/index.html"
+
+          # A hashed CSS path means the app found public/styles/app.css in its working directory.
+          css_path=$(grep -Eo '/styles/app\.[0-9a-f]{64}\.css' "$RUNNER_TEMP/index.html")
+          echo "Found $css_path"
+          curl -fsS -o /dev/null "http://localhost:8080$css_path"
+
+      - name: Check app migrations ran
+        # Take sqlite from the flake's locked nixpkgs, since there's no dev shell.
+        run: nix shell --inputs-from . nixpkgs#sqlite --command sqlite3 "$RUNNER_TEMP/app.db" .tables | tee /dev/stderr | grep -qw users

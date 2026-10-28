@@ -1,0 +1,94 @@
+{
+  description = "Experimental Nix flake for building the app";
+
+  inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-26.05";
+
+  outputs =
+    { self, nixpkgs }:
+    let
+      systems = [
+        "x86_64-linux"
+        "aarch64-linux"
+        "aarch64-darwin"
+      ];
+
+      forAllSystems = f: nixpkgs.lib.genAttrs systems (system: f nixpkgs.legacyPackages.${system});
+    in
+    {
+      packages = forAllSystems (
+        pkgs:
+        let
+          inherit (pkgs) lib;
+        in
+        {
+          default = pkgs.buildGo127Module {
+            pname = "app";
+            version = self.shortRev or self.dirtyShortRev or "dev";
+
+            # Only what the build needs. An allowlist keeps local files like .env and app.db
+            # out of the store even when the flake isn't fetched from git (e.g. `nix build path:.`),
+            # and editing docs or workflows doesn't trigger a rebuild.
+            # Add new top-level Go package directories here.
+            src = lib.fileset.toSource {
+              root = ./.;
+              fileset = lib.fileset.unions [
+                ./go.mod
+                ./go.sum
+                ./tailwind.css
+                ./cmd
+                ./html
+                ./http
+                ./jobs
+                ./model
+                # app.css is built below, so leave out any locally built copy.
+                (lib.fileset.difference ./public (lib.fileset.maybeMissing ./public/styles/app.css))
+                ./service
+                ./servicetest
+                ./sqlite
+                ./sqlitetest
+              ];
+            };
+
+            # Note: there's no .git in the build, so Go stamps no vcs.revision into the binary,
+            # and glue reports the OTel service.version as "unknown".
+
+            # Update this whenever go.mod or go.sum changes.
+            # Set it to lib.fakeHash, run nix build, and copy the hash from the error.
+            vendorHash = "sha256-weqxOti+puOgddzr06a5VG/Pl3yL22st2rBtcsWH+vU=";
+
+            subPackages = [ "cmd/app" ];
+            tags = [
+              "sqlite_fts5"
+              "sqlite_math_functions"
+            ];
+            env.CGO_ENABLED = 1;
+
+            # The tests need an S3 container, and the regular CI runs them.
+            doCheck = false;
+
+            nativeBuildInputs = [ pkgs.tailwindcss_4 ];
+
+            # Mirror the layout of the Docker runner image:
+            # bin/app, public/ (with styles/app.css), and sqlite/migrations/.
+            # Run the app from $out so it finds public/ and sqlite/migrations/.
+            postInstall = ''
+              mkdir -p $out/sqlite
+              cp -r public $out/public
+              cp -r sqlite/migrations $out/sqlite/migrations
+
+              # Like the Docker CSS stage, scan only html/ in the working directory.
+              # tailwind.css points at glue's html package in the Go module cache,
+              # which doesn't exist here, so add the vendored copy as a source.
+              mkdir css
+              cp tailwind.css css/tailwind.css
+              cp -r html css/html
+              echo '@source "../vendor/maragu.dev/glue/html";' >> css/tailwind.css
+              (cd css && tailwindcss -i tailwind.css -o $out/public/styles/app.css --minify)
+            '';
+
+            meta.mainProgram = "app";
+          };
+        }
+      );
+    };
+}
