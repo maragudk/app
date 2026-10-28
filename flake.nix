@@ -41,7 +41,7 @@
 
             # Update this whenever go.mod or go.sum changes.
             # Set it to lib.fakeHash, run nix build, and copy the hash from the error.
-            vendorHash = lib.fakeHash;
+            vendorHash = "sha256-weqxOti+puOgddzr06a5VG/Pl3yL22st2rBtcsWH+vU=";
 
             subPackages = [ "cmd/app" ];
             tags = [
