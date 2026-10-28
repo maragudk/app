@@ -25,19 +25,32 @@
             pname = "app";
             version = self.shortRev or self.dirtyShortRev or "dev";
 
-            # Everything tracked in git except files that don't affect the build,
-            # so editing docs or workflows doesn't trigger a rebuild.
+            # Only what the build needs. An allowlist keeps local files like .env and app.db
+            # out of the store even when the flake isn't fetched from git (e.g. `nix build path:.`),
+            # and editing docs or workflows doesn't trigger a rebuild.
+            # Add new top-level Go package directories here.
             src = lib.fileset.toSource {
               root = ./.;
-              fileset = lib.fileset.difference ./. (
-                lib.fileset.unions [
-                  ./.github
-                  ./docs
-                  (lib.fileset.maybeMissing ./flake.lock)
-                  ./flake.nix
-                ]
-              );
+              fileset = lib.fileset.unions [
+                ./go.mod
+                ./go.sum
+                ./tailwind.css
+                ./cmd
+                ./html
+                ./http
+                ./jobs
+                ./model
+                # app.css is built below, so leave out any locally built copy.
+                (lib.fileset.difference ./public (lib.fileset.maybeMissing ./public/styles/app.css))
+                ./service
+                ./servicetest
+                ./sqlite
+                ./sqlitetest
+              ];
             };
+
+            # Note: there's no .git in the build, so Go stamps no vcs.revision into the binary,
+            # and glue reports the OTel service.version as "unknown".
 
             # Update this whenever go.mod or go.sum changes.
             # Set it to lib.fakeHash, run nix build, and copy the hash from the error.

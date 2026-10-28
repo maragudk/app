@@ -63,6 +63,7 @@ jobs:
               command -v "$tool"
             done
             golangci-lint version
+            golangci-lint version | grep -q "version 2\.15\.0 built with go1\.27"
             CGO_ENABLED=1 go build -tags sqlite_fts5,sqlite_math_functions -o /dev/null ./cmd/app
             golangci-lint run
           '
@@ -86,3 +87,6 @@ jobs:
           css_path=$(grep -Eo '/styles/app\.[0-9a-f]{64}\.css' "$RUNNER_TEMP/index.html")
           echo "Found $css_path"
           curl -fsS -o /dev/null "http://localhost:8080$css_path"
+
+      - name: Check app migrations ran
+        run: nix develop --command sqlite3 "$RUNNER_TEMP/app.db" .tables | tee /dev/stderr | grep -qw users
