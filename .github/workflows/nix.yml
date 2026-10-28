@@ -75,7 +75,7 @@ jobs:
           trap 'kill $pid 2>/dev/null || true; cat "$RUNNER_TEMP/app.log"' EXIT
 
           for i in $(seq 1 30); do
-            if curl -fsS -o "$RUNNER_TEMP/index.html" http://localhost:8080/; then
+            if curl -fs -o "$RUNNER_TEMP/index.html" http://localhost:8080/; then
               break
             fi
             sleep 1
@@ -84,4 +84,5 @@ jobs:
 
           # A hashed CSS path means the app found public/styles/app.css in its working directory.
           css_path=$(grep -Eo '/styles/app\.[0-9a-f]{64}\.css' "$RUNNER_TEMP/index.html")
+          echo "Found $css_path"
           curl -fsS -o /dev/null "http://localhost:8080$css_path"
