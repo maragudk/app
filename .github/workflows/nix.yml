@@ -1,0 +1,89 @@
+name: Nix
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref_name }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  nix:
+    name: nix (${{ matrix.system }})
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            system: x86_64-linux
+          - os: ubuntu-24.04-arm
+            system: aarch64-linux
+          - os: macos-latest
+            system: aarch64-darwin
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: cachix/install-nix-action@v31.11.2
+
+      - name: Check system
+        run: test "$(nix eval --impure --raw --expr builtins.currentSystem)" = "${{ matrix.system }}"
+
+      - name: Check flake
+        run: nix flake check --print-build-logs
+
+      - name: Print lock file
+        if: always()
+        run: cat flake.lock
+
+      - name: Build
+        run: nix build --print-build-logs
+
+      - name: Check build output
+        run: |
+          ls -lR result/
+          test -x result/bin/app
+          test -s result/public/styles/app.css
+          test -f result/public/scripts/datastar.js
+          test -d result/sqlite/migrations
+
+      - name: Check dev shell
+        run: |
+          nix develop --command bash -euo pipefail -c '
+            go version
+            go version | grep -q "go1\.27"
+            for tool in tailwindcss golangci-lint goimports sqlite3; do
+              command -v "$tool"
+            done
+            golangci-lint version
+            CGO_ENABLED=1 go build -tags sqlite_fts5,sqlite_math_functions -o /dev/null ./cmd/app
+            golangci-lint run
+          '
+
+      - name: Smoke test
+        working-directory: result
+        run: |
+          DATABASE_PATH="$RUNNER_TEMP/app.db" SERVER_ADDRESS=localhost:8080 ./bin/app > "$RUNNER_TEMP/app.log" 2>&1 &
+          pid=$!
+          trap 'kill $pid 2>/dev/null || true; cat "$RUNNER_TEMP/app.log"' EXIT
+
+          for i in $(seq 1 30); do
+            if curl -fsS -o "$RUNNER_TEMP/index.html" http://localhost:8080/; then
+              break
+            fi
+            sleep 1
+          done
+          test -s "$RUNNER_TEMP/index.html"
+
+          # A hashed CSS path means the app found public/styles/app.css in its working directory.
+          css_path=$(grep -Eo '/styles/app\.[0-9a-f]{64}\.css' "$RUNNER_TEMP/index.html")
+          curl -fsS -o /dev/null "http://localhost:8080$css_path"
