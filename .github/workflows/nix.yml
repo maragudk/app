@@ -49,6 +49,8 @@ jobs:
           ls -lR result/
           test -x result/bin/app
           test -s result/public/styles/app.css
+          # min-w-12 is only used in glue's html package, so this checks Tailwind scanned the vendored glue code.
+          grep -q '\.min-w-12' result/public/styles/app.css
           test -f result/public/scripts/datastar.js
           test -d result/sqlite/migrations
 
