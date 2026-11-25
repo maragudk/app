@@ -156,3 +156,45 @@ Nothing in particular.
 ### Future work
 
 None. CI uses Docker by choice.
+
+## Step 4: Simplify the versitygw variables in the Makefile
+
+**Author:** makefile-inline
+
+### Prompt Context
+
+**Verbatim prompt:** Review feedback to apply in /Makefile (agreed with Markus): 1. Inline `VERSITYGW_DATA_DIR` (`.versitygw`) into the `versitygw` and `clean-all` recipes and delete the variable. 2. Fold `VERSITYGW_VERSION` into `VERSITYGW`: one variable, `VERSITYGW = go run github.com/versity/versitygw/cmd/versitygw@v1.11.0`, still defined once and used by both `make test` and `make versitygw`. Keep the comment above it accurate. 3. Leave the `?=` port variables alone.
+**Interpretation:** Cut the Makefile from two helper variables to one, without changing behaviour.
+**Inferred intent:** Fewer indirections for a path and a version that each appear in only a couple of places.
+
+### What I did
+
+In `/Makefile`, deleted `VERSITYGW_VERSION` and `VERSITYGW_DATA_DIR`. `VERSITYGW` now holds the full `go run ...@v1.11.0` command, with a comment saying the version is pinned there once for `make test` and `make versitygw`. The `versitygw` and `clean-all` recipes use the literal `.versitygw`. The port variables are unchanged. `/AGENTS.md` and `/redo.yaml` referenced neither removed name, so they needed no change. Steps 2 and 3 above still mention `VERSITYGW_VERSION` as it was then; I left them alone.
+
+### Why
+
+A single-use version variable and a data dir name used in two recipes didn't earn their indirection.
+
+### What worked
+
+`make -n versitygw`, `make -n clean-all` and `make -n test` print the expected commands, with `go run github.com/versity/versitygw/cmd/versitygw@v1.11.0` and `.versitygw` filled in. `make test` passed with exit 0, and `pgrep -lx versitygw` found nothing afterwards.
+
+### What didn't work
+
+Nothing failed in the change itself. The session's worktree guard refused a compound command that mixed `make test` with git status ("names git in a form too complex to verify"), so I ran the commands separately. In zsh `${PIPESTATUS[0]}` is empty, so I reran `make test` without the pipe to read its exit status.
+
+### What I learned
+
+Step 2 recorded a failure test using `make test VERSITYGW_VERSION=v99.0.0`. That override no longer works, since the version is part of `VERSITYGW`. To simulate a bad version now, override the whole `VERSITYGW` variable.
+
+### What was tricky
+
+Nothing in particular.
+
+### What warrants review
+
+The diff of `/Makefile`: two variable definitions removed, two recipes use the literal `.versitygw`. I didn't touch ports 7070 or 8080.
+
+### Future work
+
+None.

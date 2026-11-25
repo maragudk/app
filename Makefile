@@ -4,9 +4,8 @@ APP_NAME ?= app
 DATABASE_PATH ?= app.db
 
 # versitygw is the local S3 server, run with go run so it stays out of go.mod.
-VERSITYGW_VERSION = v1.11.0
-VERSITYGW = go run github.com/versity/versitygw/cmd/versitygw@$(VERSITYGW_VERSION)
-VERSITYGW_DATA_DIR = .versitygw
+# The version is pinned here, once, for both make test and make versitygw.
+VERSITYGW = go run github.com/versity/versitygw/cmd/versitygw@v1.11.0
 VERSITYGW_PORT ?= 7070
 VERSITYGW_TEST_PORT ?= 7072
 VERSITYGW_WEBUI_PORT ?= 7071
@@ -21,7 +20,7 @@ build-docker:
 
 .PHONY: clean-all
 clean-all:
-	rm -rf $(VERSITYGW_DATA_DIR)
+	rm -rf .versitygw
 	rm -f $(DATABASE_PATH) $(DATABASE_PATH)-wal $(DATABASE_PATH)-shm
 
 .PHONY: cover
@@ -76,9 +75,9 @@ test:
 # Runs versitygw for development in the foreground, started by make watch.
 .PHONY: versitygw
 versitygw:
-	mkdir -p $(VERSITYGW_DATA_DIR)
+	mkdir -p .versitygw
 	$(VERSITYGW) --access access --secret secretsecret --port :$(VERSITYGW_PORT) \
-		--webui :$(VERSITYGW_WEBUI_PORT) --webui-no-tls posix $(VERSITYGW_DATA_DIR)
+		--webui :$(VERSITYGW_WEBUI_PORT) --webui-no-tls posix .versitygw
 
 .PHONY: watch
 watch: tailwindcss
