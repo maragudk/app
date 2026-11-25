@@ -264,3 +264,54 @@ Fitting idempotency, port picking, ownership and the startup wait into a recipe 
 
 - A Ctrl-C during the tests stops the test server, which then restarts on the next `make test`. Fully detaching it would need its own process group or session, which has no simple portable command.
 - Nothing in CI uses `test-up`. CI still runs versitygw as a Docker service on 7072.
+
+## Step 6: Simplify `test-up` and `test-down`
+
+**Author:** simplify-test-up
+
+### Prompt Context
+
+**Verbatim prompt:** Problem: the current `test-up` recipe is ~20 lines of dense shell handling edge cases (port search, per-checkout health path, version-aware reuse, stale-pid protection). Markus wants it simple and readable, accepting rare edge-case failures with clear errors. Rewrite `test-up` and `test-down` accordingly: (The brief went on to list what to keep (the versioned binary, the dev target, `test: test-up` plus one go test line, `clean-all: test-down`, per-checkout isolation), a fixed per-checkout port `VERSITYGW_TEST_PORT ?=` 20000 + cksum of the checkout path % 10000 overridable from `.env` or the command line with no port file, the exact `test-up` and `test-down` behaviour in roughly 5 to 8 lines, a `make test-down` note for version bumps in the Makefile and `/AGENTS.md`, removing `VERSITYGW_TEST_ID` and `VERSITYGW_TEST_HEALTH`, and a verification list.) Mid-run, from the coordinator: "Markus confirms: cut the edge cases. When you self-review, don't add robustness back (no stale-pid guards, no ownership checks, no port search, no signal handling). Keep only what the brief lists. Simple and readable beats handling every case, and a clear error is enough."
+**Interpretation:** Replace step 5's `test-up` and `test-down` with short recipes that use a fixed per-checkout port and the plain `/health` path, and fail with a clear message instead of working around rare cases.
+**Inferred intent:** A Makefile someone can read top to bottom in a minute, keeping per-checkout isolation for parallel agents.
+
+### What I did
+
+In `/Makefile`, `VERSITYGW_TEST_ID` and `VERSITYGW_TEST_HEALTH` are gone. `VERSITYGW_TEST_PORT ?= $(shell pwd | cksum | awk '{ print 20000 + $$1 % 10000 }')` gives each checkout a fixed port, which `.env` (included first) or the command line can override. `make test` sets `AWS_ENDPOINT_URL=http://localhost:$(VERSITYGW_TEST_PORT)`. There's no port file any more.
+
+`test-up` is six shell lines. It exits if the pid in `.versitygw-test/pid` is alive (`kill -0`) and `/health` answers on the port. If anything else answers HTTP on the port, it prints "Port N is in use, set VERSITYGW_TEST_PORT in .env to a free port" and fails. Otherwise it starts the binary in the background (`--health /health`, `access`/`secretsecret`, posix `.versitygw-test/data`, log in `/versitygw-test.log`), writes the pid, and polls `/health` 20 times, 0.5 seconds apart, with `--max-time 1` on each try. If the server never answers, it prints the log and exits 1. `test-down` is `kill $(cat .versitygw-test/pid)` with errors ignored, then `rm -rf .versitygw-test`. A comment above `VERSITYGW_VERSION` says to run `make test-down` after changing it. The versitygw paragraph in `/AGENTS.md` now covers the fixed port, the override, the version-bump note, and how to get the port for a direct `go test`.
+
+### Why
+
+Markus would rather have a recipe he can read than one that covers every rare case. A port that comes from the path keeps parallel worktrees apart without searching for one, and when two paths do collide, the clear message and a one-line `.env` override resolve it.
+
+### What worked
+
+All on this machine, with the binary already built:
+- `make test` started the server on 22541 and passed. A second `make test` printed no "Starting" line and kept the same pid, 64267.
+- `make test-down` twice exited 0 both times. Afterwards `pgrep` found no versitygw on 22541, `.versitygw-test/` was gone, and curl to the port exited 7.
+- With `python3 -m http.server 22541 --bind 127.0.0.1` running, `make test` printed `Port 22541 is in use, set VERSITYGW_TEST_PORT in .env to a free port` and exited 2.
+- `make test-up VERSITYGW=/usr/bin/false` printed "The test S3 server didn't start, see versitygw-test.log:" after about 10.5 seconds and exited 2. A scratch script that writes `listen tcp :22541: bind: simulated failure` to stderr and exits 1 showed that line under the message.
+- A scratch `git worktree add --detach` of this branch in the session scratchpad ran `make test` at the same time as this checkout. Both passed, on 22541 and 29848, with different pids. `make test-down` there left this checkout's server running, and `make test-up` here reused it (same pid 64958). `VERSITYGW_TEST_PORT=23456` in the scratch checkout's `.env` moved its server and `AWS_ENDPOINT_URL` to 23456. I removed the scratch worktree afterwards.
+
+### What didn't work
+
+The code itself worked on the first try. Self-review (`/code-review medium`) raised eight findings. Six asked for removed safeguards to come back: checking the pid's command line before `kill`, a TERM-wait-KILL loop in `test-down`, a per-checkout health path, the binary path in the reuse check so a version bump restarts the server, killing the server and stopping the wait early when startup fails, and treating any non-HTTP listener as a busy port (curl exit other than 7). I left all six out, because the brief and Markus cut them on purpose. The two AGENTS.md nits were real, and I fixed them, as described under What I learned.
+
+### What I learned
+
+`/.worktreeinclude` lists `.env*`, so new worktrees copy the main checkout's `.env`. A `VERSITYGW_TEST_PORT` set there would give every later worktree the same port, so AGENTS.md now says to set it in the checkout that needs it. Without a port file, and with `test-up` silent when it reuses the server, `make -n test | tail -1` is the simplest way to see the endpoint: it prints the exact `go test` line with the port filled in.
+
+### What was tricky
+
+Leaving known gaps open on purpose. The ones that remain: a startup that times out leaves the process running, so the next run says the port is in use. A non-HTTP listener on the port shows up as the startup failure log ("bind: address already in use"), not as the port message. A recycled pid in a stale pidfile gets a SIGTERM from `test-down`. And after a version bump the old server keeps running until `make test-down`.
+
+### What warrants review
+
+- `/Makefile`: `VERSITYGW_TEST_PORT`, `test-up`, `test-down`, and the version-bump comment.
+- `/AGENTS.md`: the versitygw paragraph.
+- Whether a 10-second startup timeout is enough on slower machines. A prebuilt binary answered `/health` within the first poll here.
+
+### Future work
+
+None planned. The accepted gaps are listed under What was tricky.
