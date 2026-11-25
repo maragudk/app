@@ -114,3 +114,45 @@ Signals and `go run`: it relays nothing, ignores INT and QUIT, and dies on TERM 
 - `actions/setup-go` saves its cache only when the `go.sum`-derived key misses, so callers with an existing cache compile versitygw on every run until their `go.sum` changes.
 - Developers upgrading from the Docker setup keep an orphaned `app_versitygw` Docker volume and possibly a now-unignored `.env.docker`; both can be deleted by hand.
 - Nothing bumps `VERSITYGW_VERSION` or the CI pin automatically.
+
+## Step 3: Keep Docker in CI
+
+**Author:** main
+
+### Prompt Context
+
+**Verbatim prompt:** Hmm. I've changed my mind, let's keep Docker in CI, only use versitygw directly in local dev.
+**Interpretation:** Drop the shared workflow change and keep the app change, where `make watch` and `make test` run versitygw natively.
+**Inferred intent:** Get Docker out of the local development loop without touching the shared CI setup that every repo depends on.
+
+### What I did
+
+Closed maragudk/workflows#11 with a comment explaining why, deleted its remote branch `native-versitygw`, and removed its local worktree and branch from `/Users/maragubot/Developer/workflows`. That drops the native versitygw steps in `test.yml` and `compatibility.yml`, along with the new `docs/decisions.md` entry there. maragudk/app#83 has no code changes. Its description now says that CI keeps `s3: true` and so still runs versitygw as a Docker service container through the shared workflow.
+
+### Why
+
+The app's `/.github/workflows/ci.yml` never changed. Without the shared workflow change, CI stays exactly as it was, and the app PR stands on its own.
+
+### What worked
+
+The app PR didn't depend on the workflows PR, so reverting the CI part only meant closing a PR.
+
+### What didn't work
+
+Nothing failed in this step.
+
+### What I learned
+
+Keeping the `s3` contract identical (localhost:7072, `access`/`secretsecret`, path-style) means local `make test` and CI serve the same S3 setup to tests, whether versitygw runs natively or in a container.
+
+### What was tricky
+
+Nothing in particular.
+
+### What warrants review
+
+`/AGENTS.md` says "No Docker needed". That's still true for local development, which is all it describes.
+
+### Future work
+
+None. CI uses Docker by choice.
