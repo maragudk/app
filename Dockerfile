@@ -43,6 +43,7 @@ COPY sqlite/migrations ./sqlite/migrations/
 COPY --from=cssbuilder /src/app.css ./public/styles/
 COPY --from=gobuilder /bin/app ./
 
+ENV SERVER_ADDRESS=:8080
 EXPOSE 8080
 
 CMD ["./app"]

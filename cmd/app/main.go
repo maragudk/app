@@ -2,7 +2,10 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
+	"net"
+	"os"
 	"time"
 
 	"maragu.dev/env"
@@ -70,7 +73,14 @@ func start(ctx context.Context, log *slog.Logger, eg app.Goer) error {
 		Queue: db.H.JobsQ,
 	})
 
-	baseURL := env.GetStringOrDefault("BASE_URL", "http://localhost:8080")
+	// The port defaults to one per checkout, from the working directory, so checkouts don't collide.
+	dir, err := os.Getwd()
+	if err != nil {
+		return errors.Wrap(err, "error getting working directory")
+	}
+	address := env.GetStringOrDefault("SERVER_ADDRESS", fmt.Sprint(":", port(dir, "app")))
+	_, serverPort, _ := net.SplitHostPort(address)
+	baseURL := env.GetStringOrDefault("BASE_URL", "http://localhost:"+serverPort)
 
 	sender := postmark.NewSender(postmark.NewSenderOptions{
 		AppName:                   env.GetStringOrDefault("APP_NAME", "App"),
@@ -102,7 +112,7 @@ func start(ctx context.Context, log *slog.Logger, eg app.Goer) error {
 	}
 
 	server := gluehttp.NewServer(gluehttp.NewServerOptions{
-		Address:            env.GetStringOrDefault("SERVER_ADDRESS", ":8080"),
+		Address:            address,
 		BaseURL:            baseURL,
 		CSP:                http.CSP(env.GetBoolOrDefault("CSP_ALLOW_UNSAFE_INLINE", false), env.GetBoolOrDefault("CSP_ALLOW_UNSAFE_EVAL", false)),
 		HTMLPage:           html.Page,

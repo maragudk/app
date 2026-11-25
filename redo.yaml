@@ -1,6 +1,6 @@
 commands:
   - name: "app"
-    run: "go run -tags sqlite_fts5,sqlite_math_functions ./cmd/app"
+    run: "AWS_ENDPOINT_URL=http://localhost:$(./versitygw.sh port versitygw) go run -tags sqlite_fts5,sqlite_math_functions ./cmd/app"
     watch:
       - "**/*.go"
       - "go.mod"
