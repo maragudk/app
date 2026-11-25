@@ -2,7 +2,10 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
+	"net"
+	"os"
 	"time"
 
 	"maragu.dev/env"
@@ -54,6 +57,16 @@ func start(ctx context.Context, log *slog.Logger, eg app.Goer) error {
 		return errors.Wrap(err, "error migrating database")
 	}
 
+	if env.GetBoolOrDefault("AWS_ENDPOINT_URL_LOCAL", false) {
+		s3Port, err := port("versitygw")
+		if err != nil {
+			return err
+		}
+		if err := os.Setenv("AWS_ENDPOINT_URL", fmt.Sprint("http://localhost:", s3Port)); err != nil {
+			return errors.Wrap(err, "error setting AWS endpoint URL")
+		}
+	}
+
 	awsConfig, err := aws.LoadDefaultConfig(ctx)
 	if err != nil {
 		return err
@@ -70,7 +83,17 @@ func start(ctx context.Context, log *slog.Logger, eg app.Goer) error {
 		Queue: db.H.JobsQ,
 	})
 
-	baseURL := env.GetStringOrDefault("BASE_URL", "http://localhost:8080")
+	defaultAddress := ":8080"
+	if env.GetBoolOrDefault("SERVER_ADDRESS_LOCAL", false) {
+		appPort, err := port("app")
+		if err != nil {
+			return err
+		}
+		defaultAddress = fmt.Sprint(":", appPort)
+	}
+	address := env.GetStringOrDefault("SERVER_ADDRESS", defaultAddress)
+	_, serverPort, _ := net.SplitHostPort(address)
+	baseURL := env.GetStringOrDefault("BASE_URL", "http://localhost:"+serverPort)
 
 	sender := postmark.NewSender(postmark.NewSenderOptions{
 		AppName:                   env.GetStringOrDefault("APP_NAME", "App"),
@@ -102,7 +125,7 @@ func start(ctx context.Context, log *slog.Logger, eg app.Goer) error {
 	}
 
 	server := gluehttp.NewServer(gluehttp.NewServerOptions{
-		Address:            env.GetStringOrDefault("SERVER_ADDRESS", ":8080"),
+		Address:            address,
 		BaseURL:            baseURL,
 		CSP:                http.CSP(env.GetBoolOrDefault("CSP_ALLOW_UNSAFE_INLINE", false), env.GetBoolOrDefault("CSP_ALLOW_UNSAFE_EVAL", false)),
 		HTMLPage:           html.Page,

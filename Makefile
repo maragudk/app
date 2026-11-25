@@ -3,10 +3,6 @@
 APP_NAME ?= app
 DATABASE_PATH ?= app.db
 
-# Each checkout runs its own test server, so tests in parallel worktrees don't share one.
-# Its port comes from the checkout's path. Set VERSITYGW_TEST_PORT in .env to pick another.
-VERSITYGW_TEST_PORT ?= $(shell pwd | cksum | awk '{ print 20000 + $$1 % 10000 }')
-
 .PHONY: benchmark
 benchmark:
 	go test -tags sqlite_fts5,sqlite_math_functions -bench . ./...
@@ -42,17 +38,18 @@ tailwindcss:
 
 .PHONY: test
 test: test-up
-	AWS_ENDPOINT_URL=http://localhost:$(VERSITYGW_TEST_PORT) go test -tags sqlite_fts5,sqlite_math_functions -coverprofile cover.out -shuffle on ./...
+	AWS_ENDPOINT_URL=http://localhost:$$(./versitygw.sh port versitygw-test) go test -tags sqlite_fts5,sqlite_math_functions -coverprofile cover.out -shuffle on ./...
 
 .PHONY: test-down
 test-down:
 	./versitygw.sh down
 
 # Starts this checkout's versitygw for the tests in the background, unless it's already running.
+# Each checkout gets its own port, so tests in parallel worktrees don't share one.
 # It keeps running after the tests, until make test-down.
 .PHONY: test-up
 test-up:
-	@./versitygw.sh up $(VERSITYGW_TEST_PORT)
+	@./versitygw.sh up
 
 .PHONY: watch
 watch: tailwindcss

@@ -1,8 +1,9 @@
 #!/bin/sh
 # Builds and runs versitygw, the local S3 server.
-# Usage: ./versitygw.sh dev         runs it for development in the foreground, started by make watch
-#        ./versitygw.sh up <port>   starts this checkout's server for the tests in the background
-#        ./versitygw.sh down        stops it
+# Usage: ./versitygw.sh dev           runs it for development in the foreground, started by make watch
+#        ./versitygw.sh up            starts this checkout's server for the tests in the background
+#        ./versitygw.sh down          stops it
+#        ./versitygw.sh port <name>   prints this checkout's port for the given name
 set -eu
 
 # Built into bin/ with go install, so it stays out of go.mod. The version is part of the path, so changing it rebuilds.
@@ -12,6 +13,12 @@ binary=bin/versitygw-$version/versitygw
 
 dir=.versitygw-test
 log=versitygw-test.log
+
+# port for the given name in this checkout, from a hash of the working directory and the name.
+# The same function is in cmd/app/port.go, so keep the two in sync.
+port() {
+  printf '%s' "$PWD/$1" | cksum | awk '{ print 20000 + $1 % 10000 }'
+}
 
 build() {
   if [ ! -x "$binary" ]; then
@@ -23,10 +30,10 @@ case "${1:-}" in
 dev)
   build
   mkdir -p .versitygw
-  exec "$binary" --access access --secret secretsecret --port :7070 --webui :7071 --webui-no-tls posix .versitygw
+  exec "$binary" --access access --secret secretsecret --port ":$(port versitygw)" --webui ":$(port versitygw-webui)" --webui-no-tls posix .versitygw
   ;;
 up)
-  port=$2
+  port=$(port versitygw-test)
   url=http://localhost:$port
 
   # Already running for this checkout.
@@ -36,7 +43,7 @@ up)
 
   # Something else answers on the port.
   if curl -s --max-time 1 -o /dev/null "$url"; then
-    echo "Port $port is in use, set VERSITYGW_TEST_PORT in .env to a free port" >&2
+    echo "Port $port is in use" >&2
     exit 1
   fi
 
@@ -57,12 +64,15 @@ up)
   cat $log >&2
   exit 1
   ;;
+port)
+  port "$2"
+  ;;
 down)
   kill "$(cat $dir/pid 2>/dev/null)" 2>/dev/null || true
   rm -rf $dir
   ;;
 *)
-  echo "Usage: $0 dev | up <port> | down" >&2
+  echo "Usage: $0 dev | up | down | port <name>" >&2
   exit 2
   ;;
 esac
