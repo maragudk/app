@@ -46,12 +46,13 @@ tailwindcss:
 
 # Starts a throwaway versitygw for the tests in the background, and stops it afterwards.
 # The first run compiles versitygw, which takes a minute or so. go run doesn't pass signals
-# on to the program it runs, so the cleanup stops go run's child, the server, with pkill -P.
+# on to the program it runs, and a hangup kills go run but not the server, so the cleanup
+# stops go run's children and anything with the unique data dir on its command line.
 .PHONY: test
 test:
-	@curl -s -o /dev/null http://localhost:$(VERSITYGW_TEST_PORT); \
-	if [ $$? -ne 7 ]; then \
-		echo "Port $(VERSITYGW_TEST_PORT) is in use, so the test S3 server can't start there" >&2; \
+	@if curl -s --max-time 5 -o /dev/null http://localhost:$(VERSITYGW_TEST_PORT); then \
+		echo "Something already answers on port $(VERSITYGW_TEST_PORT), so the test S3 server can't start there." >&2; \
+		echo "Find it with: lsof -i :$(VERSITYGW_TEST_PORT)" >&2; \
 		exit 1; \
 	fi; \
 	echo "Starting versitygw on port $(VERSITYGW_TEST_PORT) for the tests"; \
@@ -59,10 +60,10 @@ test:
 	$(VERSITYGW) --access access --secret secretsecret --port :$(VERSITYGW_TEST_PORT) --health /health \
 		posix "$$dir" >versitygw-test.log 2>&1 & \
 	pid=$$!; \
-	trap 'pkill -P $$pid || kill $$pid 2>/dev/null; wait $$pid; rm -rf "$$dir"' EXIT; \
-	trap 'exit 130' INT TERM; \
+	trap 'pkill -P $$pid; pkill -f -- "$$dir"; wait $$pid; rm -rf "$$dir"' EXIT; \
+	trap 'exit 130' HUP INT TERM; \
 	deadline=$$(( $$(date +%s) + 300 )); \
-	until curl -fs -o /dev/null http://localhost:$(VERSITYGW_TEST_PORT)/health; do \
+	until curl -fs --max-time 5 -o /dev/null http://localhost:$(VERSITYGW_TEST_PORT)/health; do \
 		if ! kill -0 $$pid 2>/dev/null || [ $$(date +%s) -ge $$deadline ]; then \
 			echo "The test S3 server didn't start, see versitygw-test.log:" >&2; \
 			cat versitygw-test.log >&2; \

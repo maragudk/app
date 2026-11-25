@@ -6,7 +6,7 @@ This is a web app for
 
 Start the app with `make watch`. This watches for file changes and automatically rebuilds/restarts, so it doesn't need to be restarted manually. Logs are written to `app.log`.
 
-`make watch` also runs versitygw, a local S3 server, natively with `go run` on port 7070 (web UI on 7071), with data in `.versitygw/` and logs in `versitygw.log`. `make test` starts its own throwaway versitygw on port 7072 and stops it afterwards. No Docker needed.
+`make watch` also runs versitygw, a local S3 server, natively with `go run` on port 7070 (web UI on 7071), with data in `.versitygw/` and logs in `versitygw.log`. `make test` starts its own throwaway versitygw on port 7072 and stops it afterwards. No Docker needed. To run several checkouts side by side, set `VERSITYGW_PORT`, `VERSITYGW_WEBUI_PORT` and `VERSITYGW_TEST_PORT` in `.env`, and point `AWS_ENDPOINT_URL` at the new ports: in `.env` at `VERSITYGW_PORT`, and in `.env.test` at `VERSITYGW_TEST_PORT`.
 
 ### Access
 
