@@ -2,9 +2,9 @@
 /.claude/worktrees/
 /.env
 /.env*.local
-/.env.docker
 /.env.test
 /.playwright-cli/
+/.versitygw/
 /.worktrees/
 /app.db*
 /cover.out

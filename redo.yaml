@@ -11,3 +11,9 @@ commands:
     watch:
       - "html/*.go"
       - "tailwind.css"
+
+  - name: "versitygw"
+    run: "make versitygw"
+    watch:
+      - "Makefile"
+      - ".env"
