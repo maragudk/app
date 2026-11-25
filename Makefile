@@ -3,6 +3,10 @@
 APP_NAME ?= app
 DATABASE_PATH ?= app.db
 
+# Each checkout runs its own test server, so tests in parallel worktrees don't share one.
+# Its port comes from the checkout's path. Set VERSITYGW_TEST_PORT in .env to pick another.
+VERSITYGW_TEST_PORT ?= $(shell pwd | cksum | awk '{ print 20000 + $$1 % 10000 }')
+
 .PHONY: benchmark
 benchmark:
 	go test -tags sqlite_fts5,sqlite_math_functions -bench . ./...
@@ -12,8 +16,8 @@ build-docker:
 	docker build --platform linux/arm64 -t $(APP_NAME) .
 
 .PHONY: clean-all
-clean-all: down
-	docker volume rm $(APP_NAME)_versitygw
+clean-all: test-down
+	rm -rf .versitygw
 	rm -f $(DATABASE_PATH) $(DATABASE_PATH)-wal $(DATABASE_PATH)-shm
 
 .PHONY: cover
@@ -23,10 +27,6 @@ cover:
 .PHONY: deps
 deps:
 	curl -Lf -o public/scripts/datastar.js https://cdn.jsdelivr.net/gh/starfederation/datastar@1.0.3/bundles/datastar.js
-
-.PHONY: down
-down:
-	docker compose down versitygw
 
 .PHONY: fmt
 fmt:
@@ -42,19 +42,17 @@ tailwindcss:
 
 .PHONY: test
 test: test-up
-	go test -tags sqlite_fts5,sqlite_math_functions -coverprofile cover.out -shuffle on ./...
+	AWS_ENDPOINT_URL=http://localhost:$(VERSITYGW_TEST_PORT) go test -tags sqlite_fts5,sqlite_math_functions -coverprofile cover.out -shuffle on ./...
 
 .PHONY: test-down
 test-down:
-	docker compose down versitygw-test
+	./versitygw.sh down
 
+# Starts this checkout's versitygw for the tests in the background, unless it's already running.
+# It keeps running after the tests, until make test-down.
 .PHONY: test-up
 test-up:
-	docker compose up -d versitygw-test
-
-.PHONY: up
-up:
-	docker compose up -d versitygw
+	@./versitygw.sh up $(VERSITYGW_TEST_PORT)
 
 .PHONY: watch
 watch: tailwindcss

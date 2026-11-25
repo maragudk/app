@@ -11,3 +11,8 @@ commands:
     watch:
       - "html/*.go"
       - "tailwind.css"
+
+  - name: "versitygw"
+    run: "./versitygw.sh dev"
+    watch:
+      - "versitygw.sh"
