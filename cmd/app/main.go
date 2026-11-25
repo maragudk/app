@@ -57,6 +57,18 @@ func start(ctx context.Context, log *slog.Logger, eg app.Goer) error {
 		return errors.Wrap(err, "error migrating database")
 	}
 
+	// The local flags derive ports from the working directory, so checkouts don't collide.
+	dir, err := os.Getwd()
+	if err != nil {
+		return errors.Wrap(err, "error getting working directory")
+	}
+
+	if env.GetBoolOrDefault("AWS_ENDPOINT_URL_LOCAL", false) {
+		if err := os.Setenv("AWS_ENDPOINT_URL", fmt.Sprint("http://localhost:", port(dir, "versitygw"))); err != nil {
+			return errors.Wrap(err, "error setting AWS endpoint URL")
+		}
+	}
+
 	awsConfig, err := aws.LoadDefaultConfig(ctx)
 	if err != nil {
 		return err
@@ -73,12 +85,11 @@ func start(ctx context.Context, log *slog.Logger, eg app.Goer) error {
 		Queue: db.H.JobsQ,
 	})
 
-	// The port defaults to one per checkout, from the working directory, so checkouts don't collide.
-	dir, err := os.Getwd()
-	if err != nil {
-		return errors.Wrap(err, "error getting working directory")
+	defaultAddress := ":8080"
+	if env.GetBoolOrDefault("SERVER_ADDRESS_LOCAL", false) {
+		defaultAddress = fmt.Sprint(":", port(dir, "app"))
 	}
-	address := env.GetStringOrDefault("SERVER_ADDRESS", fmt.Sprint(":", port(dir, "app")))
+	address := env.GetStringOrDefault("SERVER_ADDRESS", defaultAddress)
 	_, serverPort, _ := net.SplitHostPort(address)
 	baseURL := env.GetStringOrDefault("BASE_URL", "http://localhost:"+serverPort)
 

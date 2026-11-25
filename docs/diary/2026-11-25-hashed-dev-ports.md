@@ -117,3 +117,48 @@ The old Makefile hashed `pwd | cksum`, which includes the trailing newline. The 
 ### Future work
 
 None planned beyond removing the stale lines from existing `.env` files.
+
+## Step 3: Opt into local endpoint and server port with two flags
+
+**Author:** endpoint-default
+
+### Prompt Context
+
+**Verbatim prompt:** Change decided by Markus: the app itself defaults `AWS_ENDPOINT_URL` too, instead of redo setting it. (Two follow-ups from Markus, relayed by the coordinator mid-task: instead of defaulting `AWS_ENDPOINT_URL` when unset, add a bool `AWS_ENDPOINT_URL_LOCAL` that sets it to the dev versitygw; and a second bool `SERVER_ADDRESS_LOCAL`, so `SERVER_ADDRESS` defaults to `:8080` as before unless the flag is true, with `ENV SERVER_ADDRESS=:8080` removed from `/Dockerfile` again.)
+**Interpretation:** Keep production behaviour identical by default. Dev opts in with two separate flags in `.env`, and `/redo.yaml` goes back to a plain `go run`.
+**Inferred intent:** Dev and production can be told apart by an explicit setting, not by guessing, so the app can own the derived defaults.
+
+### What I did
+
+In `/cmd/app/main.go`, `os.Getwd` moved up, ahead of the AWS config. When `AWS_ENDPOINT_URL_LOCAL` is true, the app sets `AWS_ENDPOINT_URL` to `http://localhost:<port(cwd, "versitygw")>` with `os.Setenv`, before `aws.LoadDefaultConfig`. `SERVER_ADDRESS` defaults to `:8080`, or to `:<port(cwd, "app")>` when `SERVER_ADDRESS_LOCAL` is true. An explicit `SERVER_ADDRESS` still wins, and `BASE_URL` still derives from the address in use. `/redo.yaml` lost the `AWS_ENDPOINT_URL=...` prefix, and `/Dockerfile` lost `ENV SERVER_ADDRESS=:8080`. `/.env.example` got `AWS_ENDPOINT_URL_LOCAL=true` and `SERVER_ADDRESS_LOCAL=true`. I added both to this worktree's `.env` as well.
+
+### Why
+
+Step 2 left `AWS_ENDPOINT_URL` in `/redo.yaml` because nothing marks production. An explicit flag does that job, and it defaults to false, so a production deploy that sets neither flag behaves as before: no endpoint override and `:8080`, which is why the Dockerfile no longer needs to pin it.
+
+### What worked
+
+- `go build ./...`, `make lint` (`0 issues.`) and `make test` passed.
+- With both flags true and no `AWS_ENDPOINT_URL`, `SERVER_ADDRESS` or `BASE_URL` in `.env`, `go tool redo` started the app on 29548 (`app.log`: `msg="Starting server" ... address=http://localhost:29548`), versitygw on 23846 and the web UI on 21710, matching `./versitygw.sh port`. A throwaway log line after `aws.LoadDefaultConfig` (reverted) showed `awsConfig.BaseEndpoint` as `http://localhost:23846`, the dev versitygw. curl gave 200 from the app and the web UI.
+- With both flags removed from `.env`, `go run ./cmd/app` logged `address=http://localhost:8080`, and the throwaway line showed an empty `AWS_ENDPOINT_URL` and a nil `BaseEndpoint`.
+
+### What didn't work
+
+The auto-mode classifier denied two commands: `pkill -f "redo"` and a `pkill -f "go run -tags ..."`, both too broad because other agents share the machine. I stopped my processes by pid instead, after checking each one's cwd with `lsof -a -p <pid> -d cwd`. I did not run an S3 put and list this time. The check of the SDK's resolved endpoint stands in for it, and step 2 already did the put and list against the same versitygw.
+
+### What I learned
+
+`env.GetBoolOrDefault` reads the flags after `.env` has loaded, so they work from `.env` like any other setting.
+
+### What was tricky
+
+The flag sets a process environment variable, because that is the one way the AWS SDK's default config loading picks the endpoint up without changing how the bucket is built.
+
+### What warrants review
+
+- Every `.env` needs `AWS_ENDPOINT_URL_LOCAL=true` and `SERVER_ADDRESS_LOCAL=true`, and the old `AWS_ENDPOINT_URL`, `BASE_URL` and `SERVER_ADDRESS` lines removed. Without the flags the app serves on `:8080` with no endpoint override.
+- Step 2's descriptions of the `AWS_ENDPOINT_URL` default in `/redo.yaml` and the `/Dockerfile` `ENV` line no longer hold.
+
+### Future work
+
+None planned.
