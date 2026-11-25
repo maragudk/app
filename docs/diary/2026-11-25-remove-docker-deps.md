@@ -315,3 +315,56 @@ Leaving known gaps open on purpose. The ones that remain: a startup that times o
 ### Future work
 
 None planned. The accepted gaps are listed under What was tricky.
+
+## Step 7: Move `test-up` and `test-down` into `versitygw.sh`
+
+**Author:** versitygw-script
+
+### Prompt Context
+
+**Verbatim prompt:** Problem: Markus finds the `test-up` recipe (six `; \`-joined shell lines) convoluted and wants the logic in a script. Move the bodies of `test-up` and `test-down` into a new `/versitygw.sh` in the repo root, with subcommands `up` and `down`: (The brief went on to say: the Makefile's `test-up: $(VERSITYGW)` runs `./versitygw.sh up` and `test-down` runs `./versitygw.sh down`, passing the binary path and `$(VERSITYGW_TEST_PORT)`, with everything else in the Makefile unchanged; the script is POSIX `#!/bin/sh` with `set -eu`, plain multi-line shell with short comments, executable, and behaves exactly like today's recipes; no edge-case handling, which Markus explicitly cut, and none added back in self-review; update `/AGENTS.md` if needed; and a verification list.)
+**Interpretation:** A pure move of the shell logic out of the Makefile into a readable script, with no change in behaviour.
+**Inferred intent:** A Makefile whose test targets read in one line each, and start and stop logic that reads top to bottom as ordinary shell.
+
+### What I did
+
+Added `/versitygw.sh` (mode 755, indented with 2 spaces per `/.editorconfig`). `up <binary> <port>` returns if the pid in `.versitygw-test/pid` is alive and `/health` answers, fails with "Port N is in use, set VERSITYGW_TEST_PORT in .env to a free port" if anything else answers, and otherwise starts the binary in the background with the same flags as before, writes the pid, and polls `/health` 20 times, 0.5 seconds apart, with `curl --max-time 1`. If it never answers, it prints `versitygw-test.log` and exits 1. `down` kills the pid if there is one and removes `.versitygw-test/`. Anything else prints a usage line and exits 2.
+
+In `/Makefile`, `test-up: $(VERSITYGW)` is now `@./versitygw.sh up $(VERSITYGW) $(VERSITYGW_TEST_PORT)` and `test-down` is `./versitygw.sh down`. The port hashing, version pin, binary target, `test`, `clean-all`, and the dev `versitygw` target are unchanged. `/AGENTS.md` says that the logic lives in `versitygw.sh` and that the two make targets call it.
+
+### Why
+
+Positional arguments read more clearly than environment variables here: `up` needs exactly two values, `down` needs none, and `make -n test-up` shows the full command with both filled in.
+
+### What worked
+
+All on this machine, with the binary already built:
+- `sh -n versitygw.sh` and `dash -n versitygw.sh` passed. shellcheck isn't installed, so I couldn't run it; I renamed the unused loop variable to `_` to avoid its SC2034 warning.
+- `make test` from cold printed the "Starting" line, started pid 66724 on 22541, and passed. A second `make test` printed no "Starting" line and kept pid 66724.
+- `make test-down` twice exited 0 both times. Afterwards `.versitygw-test/` was gone, `pgrep` found no versitygw on 22541, and curl to the port exited 7. `versitygw-test.log` stays, as before.
+- With `python3 -m http.server 22541 --bind 127.0.0.1` running, `make test-up` printed `Port 22541 is in use, set VERSITYGW_TEST_PORT in .env to a free port` and exited 2.
+- `make test-up VERSITYGW=<scratch script that writes "listen tcp :22541: bind: simulated failure" to stderr and exits 1>` printed "The test S3 server didn't start, see versitygw-test.log:" and the simulated line after 10.4 seconds, and exited 2.
+- `./versitygw.sh bogus` and `./versitygw.sh` with no argument printed `Usage: ./versitygw.sh up <binary> <port> | down` and exited 2.
+
+### What didn't work
+
+Nothing failed. The move was mechanical, and every check passed on the first run.
+
+Self-review (`/code-review medium`) raised seven findings. One was real: I had indented the script with tabs, but `/.editorconfig` asks for 2 spaces everywhere except the Makefile, Go, and Markdown. I re-indented it and re-ran the cold start, reuse, and double `test-down` checks, which passed (pid 67515 kept across two runs). One was about my working state: the script was only `git add -N`, so I staged it in full. I left the other five as they are. Three were safeguards cut on purpose in step 6: waiting for the server to exit in `down`, treating a non-HTTP listener as a busy port, and argument checks under `set -u`. One asked for a `cd "$(dirname "$0")"`, which isn't needed because only make calls the script, from the repo root. The last asked for a test-specific name, but the brief names the file `/versitygw.sh`.
+
+### What I learned
+
+`set -e` doesn't trip on the `kill -0 ... && curl ...` test or the curl probes, because commands in an `if` condition are exempt, so the script keeps the recipe's logic without `|| true` noise except in `down`'s `kill`.
+
+### What was tricky
+
+Keeping it a pure move. The known gaps from step 6 (a timed-out startup leaves the process running, a recycled pid in a stale pidfile gets a SIGTERM, an old server keeps running after a version bump) are still there on purpose.
+
+### What warrants review
+
+- `/versitygw.sh`, compared with the old recipes in `git show HEAD~1:Makefile`.
+- `/Makefile`: the `test-up` and `test-down` lines.
+
+### Future work
+
+None planned.

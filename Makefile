@@ -54,20 +54,13 @@ test: test-up
 
 .PHONY: test-down
 test-down:
-	@kill $$(cat .versitygw-test/pid 2>/dev/null) 2>/dev/null || true
-	rm -rf .versitygw-test
+	./versitygw.sh down
 
 # Starts this checkout's versitygw for the tests in the background, unless it's already running.
 # It keeps running after the tests, until make test-down.
 .PHONY: test-up
 test-up: $(VERSITYGW)
-	@if kill -0 $$(cat .versitygw-test/pid 2>/dev/null) 2>/dev/null && curl -fs --max-time 1 -o /dev/null http://localhost:$(VERSITYGW_TEST_PORT)/health; then exit; fi; \
-	if curl -s --max-time 1 -o /dev/null http://localhost:$(VERSITYGW_TEST_PORT); then echo "Port $(VERSITYGW_TEST_PORT) is in use, set VERSITYGW_TEST_PORT in .env to a free port" >&2; exit 1; fi; \
-	echo "Starting versitygw on port $(VERSITYGW_TEST_PORT) for the tests"; \
-	mkdir -p .versitygw-test/data; \
-	$(VERSITYGW) --access access --secret secretsecret --port :$(VERSITYGW_TEST_PORT) --health /health posix .versitygw-test/data >versitygw-test.log 2>&1 & echo $$! >.versitygw-test/pid; \
-	for i in $$(seq 20); do curl -fs --max-time 1 -o /dev/null http://localhost:$(VERSITYGW_TEST_PORT)/health && exit; sleep 0.5; done; \
-	echo "The test S3 server didn't start, see versitygw-test.log:" >&2; cat versitygw-test.log >&2; exit 1
+	@./versitygw.sh up $(VERSITYGW) $(VERSITYGW_TEST_PORT)
 
 # Runs versitygw for development in the foreground, started by make watch.
 .PHONY: versitygw
