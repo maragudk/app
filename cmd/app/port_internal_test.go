@@ -6,7 +6,7 @@ import (
 	"maragu.dev/is"
 )
 
-func TestPort(t *testing.T) {
+func TestHashPort(t *testing.T) {
 	// The expected ports come from the port function in versitygw.sh, so the two stay the same.
 	tests := []struct {
 		dir      string
@@ -25,7 +25,7 @@ func TestPort(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run("should return the same port as versitygw.sh for "+test.dir+"/"+test.name, func(t *testing.T) {
-			is.Equal(t, test.expected, port(test.dir, test.name))
+			is.Equal(t, test.expected, hashPort(test.dir, test.name))
 		})
 	}
 }

@@ -1,8 +1,23 @@
 package main
 
-// port for the given name in the given directory, from a hash of the directory and the name.
+import (
+	"os"
+
+	"maragu.dev/errors"
+)
+
+// port for the given name in the working directory, so checkouts in different directories don't collide.
+func port(name string) (int, error) {
+	dir, err := os.Getwd()
+	if err != nil {
+		return 0, errors.Wrap(err, "error getting working directory")
+	}
+	return hashPort(dir, name), nil
+}
+
+// hashPort for the given name in the given directory, from a hash of the directory and the name.
 // The hash is the POSIX cksum checksum, so the port is the same as from the port function in versitygw.sh.
-func port(dir, name string) int {
+func hashPort(dir, name string) int {
 	b := []byte(dir + "/" + name)
 
 	// cksum appends the length to the data, least significant byte first, without trailing zero bytes.
