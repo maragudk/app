@@ -1,16 +1,32 @@
 #!/bin/sh
-# Starts and stops this checkout's versitygw, the local S3 server for the tests.
-# Usage: ./versitygw.sh up <binary> <port>
-#        ./versitygw.sh down
+# Builds and runs versitygw, the local S3 server.
+# Usage: ./versitygw.sh dev         runs it for development in the foreground, started by make watch
+#        ./versitygw.sh up <port>   starts this checkout's server for the tests in the background
+#        ./versitygw.sh down        stops it
 set -eu
+
+# Built into bin/ with go install, so it stays out of go.mod. The version is part of the path, so changing it rebuilds.
+# After changing it, run make test-down, so the next make test starts the new version.
+version=v1.11.0
+binary=bin/versitygw-$version/versitygw
 
 dir=.versitygw-test
 log=versitygw-test.log
 
+build() {
+  if [ ! -x "$binary" ]; then
+    GOBIN="$PWD/bin/versitygw-$version" go install github.com/versity/versitygw/cmd/versitygw@$version
+  fi
+}
+
 case "${1:-}" in
+dev)
+  build
+  mkdir -p .versitygw
+  exec "$binary" --access access --secret secretsecret --port :7070 --webui :7071 --webui-no-tls posix .versitygw
+  ;;
 up)
-  binary=$2
-  port=$3
+  port=$2
   url=http://localhost:$port
 
   # Already running for this checkout.
@@ -24,6 +40,7 @@ up)
     exit 1
   fi
 
+  build
   echo "Starting versitygw on port $port for the tests"
   mkdir -p $dir/data
   "$binary" --access access --secret secretsecret --port ":$port" --health /health posix $dir/data >$log 2>&1 &
@@ -45,7 +62,7 @@ down)
   rm -rf $dir
   ;;
 *)
-  echo "Usage: $0 up <binary> <port> | down" >&2
+  echo "Usage: $0 dev | up <port> | down" >&2
   exit 2
   ;;
 esac

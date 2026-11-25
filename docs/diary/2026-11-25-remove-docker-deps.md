@@ -368,3 +368,57 @@ Keeping it a pure move. The known gaps from step 6 (a timed-out startup leaves t
 ### Future work
 
 None planned.
+
+## Step 8: Let `versitygw.sh` own versitygw, and drop the AGENTS.md text
+
+**Author:** redo-script
+
+### Prompt Context
+
+**Verbatim prompt:** Change requested by Markus: redo should run the script directly instead of `make versitygw`. So `/versitygw.sh` owns everything about versitygw: (The brief went on to say: move the version pin, binary path and `go install` build into the script as a small function both subcommands call; add a `dev` subcommand that builds if needed, makes `.versitygw`, and `exec`s the binary in the foreground on hardcoded :7070 with the web UI on :7071; `up` takes only the port and builds if needed; `down` unchanged; `/redo.yaml` runs `./versitygw.sh dev` and watches `versitygw.sh`; remove the `versitygw` target, the binary file target, and the version and dev port variables from `/Makefile`, keeping the test port hashing, `test`, `test-up`, `test-down` and `clean-all`; move the version-bump note to the script; update `/AGENTS.md`; and add no edge-case handling.) A follow-up from Markus mid-task: drop the large new versitygw text from /AGENTS.md. It should Just Work via `make watch`, `make test`, `make test-up`, and `make test-down`, so don't document internals (ports, hashing, pidfiles, overrides, script details, how to run plain go test). At most one short sentence if something is genuinely needed, for example that `make test` starts the test S3 server on its own; otherwise compare with `git show main:AGENTS.md` and restore it, apart from removing references to Docker or docker compose targets that no longer exist.
+**Interpretation:** Move the last versitygw pieces out of the Makefile into `/versitygw.sh`, have redo call the script, and put `/AGENTS.md` back to what main has.
+**Inferred intent:** One place to read and change everything about versitygw, a Makefile that only wires make targets to it, and agent docs that don't describe machinery that works on its own.
+
+### What I did
+
+`/versitygw.sh` now starts with `version=v1.11.0` and `binary=bin/versitygw-$version/versitygw`, with the version-bump note above them. A `build` function runs `GOBIN="$PWD/bin/versitygw-$version" go install github.com/versity/versitygw/cmd/versitygw@$version` when the binary isn't executable. `dev` calls `build`, runs `mkdir -p .versitygw`, and `exec`s the binary with the same flags the old make target used, ports hardcoded to 7070 and 7071. `up <port>` calls `build` just before it starts the server, after the reuse and port-in-use checks, and is otherwise unchanged. `down` is unchanged. The usage line is now `dev | up <port> | down`.
+
+In `/Makefile` I removed the versitygw comment block, `VERSITYGW_VERSION`, `VERSITYGW`, `VERSITYGW_PORT`, `VERSITYGW_WEBUI_PORT`, the `versitygw` target and the `$(VERSITYGW)` file target. `test-up` has no prerequisite now and runs `@./versitygw.sh up $(VERSITYGW_TEST_PORT)`. In `/redo.yaml` the versitygw command runs `./versitygw.sh dev` and watches only `versitygw.sh`. I dropped `.env` from its watch list too, since nothing in the dev command reads `.env` any more.
+
+I first rewrote the `/AGENTS.md` paragraph to point at the script. After Markus's follow-up I restored the file from main with `git checkout main -- AGENTS.md`. Main's version has no Docker references, so nothing needed removing, and nothing seemed worth the one optional sentence: `make test` starting its own server is what makes it Just Work.
+
+### Why
+
+With the build in the script, redo can run `./versitygw.sh dev` without going through make, and the version lives in one file next to the code that uses it. `exec` makes the script's pid the versitygw pid, so redo's signals reach the server directly.
+
+### What worked
+
+- `sh -n versitygw.sh` and `dash -n versitygw.sh` passed.
+- With `bin/` deleted, `make test` built `bin/versitygw-v1.11.0/versitygw`, started the test server (pid 74233), and passed in about 11 seconds. A second `make test` printed no "Starting" line and kept pid 74233.
+- `make test-down` twice exited 0 both times, and `.versitygw-test/` was gone afterwards.
+- Ports 7070 and 7071 were free, so I ran `./versitygw.sh dev` directly. `ps` showed the script's own pid running `bin/versitygw-v1.11.0/versitygw --access access --secret secretsecret --port :7070 --webui :7071 --webui-no-tls posix .versitygw`, and `lsof` showed it listening on both ports. curl got 403 from 7070 (S3, unauthenticated) and 200 from 7071 (web UI). After `kill -TERM` on that pid, the log ended with "terminating signal caught, shutting down", nothing listened on 7070 or 7071, and no versitygw process was left.
+
+### What didn't work
+
+The code worked on the first run. One slip of mine: my first background start of `dev` redirected its output to `../dev-out.log`, which is outside the worktree. I stopped it, deleted that file, and restarted with the log in the session scratchpad.
+
+Self-review (`/code-review medium`) raised ten findings. I changed nothing because of them. Two went against what Markus asked for in this step: the hardcoded dev ports (it wanted `VERSITYGW_PORT` and the `.env` watch back) and the restored `/AGENTS.md` (it wanted the versitygw paragraph back). Six asked for safeguards he cut on purpose: a command-line check before `kill`, cleanup after a startup timeout, a lock against two concurrent `up` runs, retrying a slow `/health`, treating a non-HTTP listener as a busy port, and waiting for exit in `down`. Step 7 had already turned down the `cd "$(dirname "$0")"` finding, because make and redo always run the script from the repo root. The last one is older than this branch's script: `make clean-all` deletes `.versitygw` without stopping a running `make watch`.
+
+### What I learned
+
+The build check has to come before the `exec` in `dev`, but in `up` it can wait until after the reuse check. That way a `make test` against a running server doesn't touch `go` at all.
+
+### What was tricky
+
+Nothing much. The redo watch list was the only judgement call. The brief named `versitygw.sh`, and `.env` no longer feeds the dev command, so I dropped it rather than keep a watch that restarts versitygw for no reason.
+
+### What warrants review
+
+- `/versitygw.sh`: the `build` function and `dev`.
+- `/Makefile`: `test-up` without the binary prerequisite.
+- `/redo.yaml`: the versitygw command and its watch list.
+- `/AGENTS.md`: should match `git show main:AGENTS.md` exactly (`git diff main -- AGENTS.md` is empty).
+
+### Future work
+
+None planned.

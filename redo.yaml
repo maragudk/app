@@ -13,7 +13,6 @@ commands:
       - "tailwind.css"
 
   - name: "versitygw"
-    run: "make versitygw"
+    run: "./versitygw.sh dev"
     watch:
-      - "Makefile"
-      - ".env"
+      - "versitygw.sh"

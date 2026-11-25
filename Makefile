@@ -3,14 +3,6 @@
 APP_NAME ?= app
 DATABASE_PATH ?= app.db
 
-# versitygw is the local S3 server, built into bin/ with go install so it stays out of go.mod.
-# The version is pinned here, once, and is part of the binary's path, so changing it rebuilds.
-# After changing it, run make test-down, so the next make test starts the new version.
-VERSITYGW_VERSION = v1.11.0
-VERSITYGW = bin/versitygw-$(VERSITYGW_VERSION)/versitygw
-VERSITYGW_PORT ?= 7070
-VERSITYGW_WEBUI_PORT ?= 7071
-
 # Each checkout runs its own test server, so tests in parallel worktrees don't share one.
 # Its port comes from the checkout's path. Set VERSITYGW_TEST_PORT in .env to pick another.
 VERSITYGW_TEST_PORT ?= $(shell pwd | cksum | awk '{ print 20000 + $$1 % 10000 }')
@@ -59,18 +51,8 @@ test-down:
 # Starts this checkout's versitygw for the tests in the background, unless it's already running.
 # It keeps running after the tests, until make test-down.
 .PHONY: test-up
-test-up: $(VERSITYGW)
-	@./versitygw.sh up $(VERSITYGW) $(VERSITYGW_TEST_PORT)
-
-# Runs versitygw for development in the foreground, started by make watch.
-.PHONY: versitygw
-versitygw: $(VERSITYGW)
-	mkdir -p .versitygw
-	$(VERSITYGW) --access access --secret secretsecret --port :$(VERSITYGW_PORT) \
-		--webui :$(VERSITYGW_WEBUI_PORT) --webui-no-tls posix .versitygw
-
-$(VERSITYGW):
-	GOBIN="$(CURDIR)/$(@D)" go install github.com/versity/versitygw/cmd/versitygw@$(VERSITYGW_VERSION)
+test-up:
+	@./versitygw.sh up $(VERSITYGW_TEST_PORT)
 
 .PHONY: watch
 watch: tailwindcss
